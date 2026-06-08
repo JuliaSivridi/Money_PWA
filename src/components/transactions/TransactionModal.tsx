@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -33,9 +33,21 @@ export function AmountInput({ value, onChange, placeholder = '0.00' }: {
   value: string; onChange: (v: string) => void; placeholder?: string
 }) {
   const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
+  }, [open])
 
   return (
-    <div>
+    <div ref={containerRef} className="relative">
       <div
         role="button"
         tabIndex={0}
@@ -49,7 +61,11 @@ export function AmountInput({ value, onChange, placeholder = '0.00' }: {
       >
         {value || placeholder}
       </div>
-      {open && <NumericKeyboard value={value} onChange={onChange} />}
+      {open && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-10 rounded-md overflow-hidden border border-border shadow-lg">
+          <NumericKeyboard value={value} onChange={onChange} />
+        </div>
+      )}
     </div>
   )
 }
