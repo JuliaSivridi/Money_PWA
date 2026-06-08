@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Header } from './Header'
 import { Drawer } from './Drawer'
-import { SyncStatusBanner } from '@/components/common/SyncStatusBanner'
 import { TransactionList } from '@/components/transactions/TransactionList'
 import { AccountsPage } from '@/components/accounts/AccountsPage'
 import { CategoriesPage } from '@/components/categories/CategoriesPage'
@@ -35,8 +34,6 @@ export function AppShell() {
   return (
     <div className="flex flex-col h-dvh bg-background">
       <Header />
-      <SyncStatusBanner />
-
       <div className="flex flex-1 overflow-hidden">
         {!settingsOpen && (
           <>

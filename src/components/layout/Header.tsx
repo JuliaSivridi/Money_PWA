@@ -1,4 +1,4 @@
-import { Menu, LogOut, Settings, ChevronLeft } from 'lucide-react'
+import { Menu, LogOut, Settings, ChevronLeft, WifiOff, RefreshCw, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -7,11 +7,13 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
-import { flush, clearLocalData } from '@/services/syncService'
+import { useSyncStore } from '@/store/syncStore'
+import { flush, clearLocalData, fullSync } from '@/services/syncService'
 
 export function Header() {
   const { user, logout } = useAuthStore()
   const { selectedView, settingsOpen, setSettingsOpen, sidebarOpen, setSidebarOpen } = useUIStore()
+  const { isOnline, isSyncing, pendingCount, syncError } = useSyncStore()
 
   const VIEW_LABELS: Record<string, string> = {
     transactions: 'Transactions',
@@ -27,6 +29,7 @@ export function Header() {
   }
 
   return (
+    <TooltipProvider>
     <header className="flex items-center gap-3 px-4 h-14 border-b bg-background flex-shrink-0">
       {settingsOpen ? (
         <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(false)} aria-label="Back">
@@ -46,10 +49,40 @@ export function Header() {
         {settingsOpen ? 'Settings' : VIEW_LABELS[selectedView]}
       </span>
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-2">
+        {/* Sync status indicator */}
+        {!isOnline && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-amber-500 dark:text-amber-400"><WifiOff size={16} /></span>
+            </TooltipTrigger>
+            <TooltipContent>{pendingCount > 0 ? `Offline · ${pendingCount} pending` : 'Offline'}</TooltipContent>
+          </Tooltip>
+        )}
+        {isOnline && syncError && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={() => void fullSync()} className="text-destructive"><AlertCircle size={16} /></button>
+            </TooltipTrigger>
+            <TooltipContent>Sync error — tap to retry</TooltipContent>
+          </Tooltip>
+        )}
+        {isOnline && !syncError && isSyncing && (
+          <span className="text-muted-foreground"><RefreshCw size={16} className="animate-spin" /></span>
+        )}
+        {isOnline && !syncError && !isSyncing && pendingCount > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={() => void fullSync()} className="text-muted-foreground"><RefreshCw size={16} /></button>
+            </TooltipTrigger>
+            <TooltipContent>{pendingCount} changes pending</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1">
         {user && (
-          <TooltipProvider>
-            <Tooltip>
+          <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -80,9 +113,9 @@ export function Header() {
               </TooltipTrigger>
               <TooltipContent>{user.email}</TooltipContent>
             </Tooltip>
-          </TooltipProvider>
         )}
       </div>
     </header>
+    </TooltipProvider>
   )
 }
