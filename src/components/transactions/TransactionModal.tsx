@@ -35,21 +35,22 @@ export function AmountInput({ value, onChange, placeholder = '0.00' }: {
   const [open, setOpen] = useState(false)
 
   return (
-    <>
-      <input
-        type="text"
-        readOnly
-        inputMode="none"
-        value={value}
-        placeholder={placeholder}
-        onClick={() => setOpen(true)}
+    <div>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen(v => !v)}
+        onKeyDown={e => e.key === 'Enter' && setOpen(v => !v)}
         className={cn(
-          'w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground cursor-pointer focus:outline-none',
+          'w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground cursor-pointer select-none',
           open ? 'border-ring ring-2 ring-ring' : 'border-input',
+          !value && 'text-muted-foreground',
         )}
-      />
-      {open && <NumericKeyboard value={value} onChange={onChange} onClose={() => setOpen(false)} />}
-    </>
+      >
+        {value || placeholder}
+      </div>
+      {open && <NumericKeyboard value={value} onChange={onChange} />}
+    </div>
   )
 }
 

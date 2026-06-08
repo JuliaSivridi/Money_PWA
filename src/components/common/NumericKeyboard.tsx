@@ -1,9 +1,6 @@
-import * as DialogPrimitive from '@radix-ui/react-dialog'
-
 interface Props {
   value: string
   onChange: (v: string) => void
-  onClose: () => void
 }
 
 const ROWS = [
@@ -13,12 +10,9 @@ const ROWS = [
   ['.', '0', '⌫'],
 ]
 
-export function NumericKeyboard({ value, onChange, onClose }: Props) {
+export function NumericKeyboard({ value, onChange }: Props) {
   const press = (key: string) => {
-    if (key === '⌫') {
-      onChange(value.slice(0, -1))
-      return
-    }
+    if (key === '⌫') { onChange(value.slice(0, -1)); return }
     if (key === '.') {
       if (!value.includes('.')) onChange((value || '0') + '.')
       return
@@ -30,29 +24,22 @@ export function NumericKeyboard({ value, onChange, onClose }: Props) {
   }
 
   return (
-    <DialogPrimitive.Portal>
-      {/* Transparent backdrop to close on outside tap */}
-      <div
-        className="fixed inset-0 z-[98]"
-        onPointerDown={onClose}
-      />
-      <div className="fixed inset-x-0 bottom-0 z-[99] bg-background border-t border-border shadow-lg">
-        {ROWS.map((row, ri) => (
-          <div key={ri} className="flex">
-            {row.map(key => (
-              <button
-                key={key}
-                type="button"
-                onPointerDown={e => { e.preventDefault(); e.stopPropagation(); press(key) }}
-                style={{ touchAction: 'manipulation' }}
-                className="flex-1 py-4 text-xl font-medium border-r border-b border-border/40 last:border-r-0 active:bg-accent transition-colors select-none"
-              >
-                {key}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-    </DialogPrimitive.Portal>
+    <div className="mt-1 border border-border rounded-md overflow-hidden">
+      {ROWS.map((row, ri) => (
+        <div key={ri} className="flex border-b border-border/40 last:border-b-0">
+          {row.map(key => (
+            <button
+              key={key}
+              type="button"
+              onPointerDown={e => { e.preventDefault(); press(key) }}
+              style={{ touchAction: 'manipulation' }}
+              className="flex-1 py-3 text-lg font-medium border-r border-border/40 last:border-r-0 bg-background active:bg-accent transition-colors select-none"
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
   )
 }
