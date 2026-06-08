@@ -11,16 +11,11 @@ export class MoneyDB extends Dexie {
   queue!:        Table<QueueItem>
 
   constructor() {
-    super('MoneyDB')
-    // v1 used ++localId (auto-increment) as primary key — bulkPut could not upsert by entity id,
-    // causing duplicates on every sync. v2 uses the entity id as primary key.
+    // New name MoneyDB2 — avoids Dexie's "cannot change primary key" error
+    // when upgrading from v1 (++localId) to v2 (id). Old MoneyDB is abandoned;
+    // data re-syncs from Sheets automatically.
+    super('MoneyDB2')
     this.version(1).stores({
-      transactions: '++localId, id, date, type, account_id, category_id, updated_at',
-      accounts:     '++localId, id, type, archived, updated_at',
-      categories:   '++localId, id, sort_order, updated_at',
-      queue:        '++localId, status, entityType, entityId, createdAt',
-    })
-    this.version(2).stores({
       transactions: 'id, date, type, account_id, category_id, updated_at',
       accounts:     'id, type, archived, updated_at',
       categories:   'id, sort_order, updated_at',
