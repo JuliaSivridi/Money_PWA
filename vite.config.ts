@@ -17,11 +17,10 @@ export default defineConfig({
         theme_color: '#e07e38',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/Money-PWA/',
+        start_url: '/Money_PWA/',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/Money_PWA/icons/icon.svg', sizes: 'any', type: 'image/svg+xml' },
+          { src: '/Money_PWA/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
         ],
       },
       workbox: {
