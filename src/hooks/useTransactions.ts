@@ -30,7 +30,7 @@ export function useTransactionsByDate(): DateGroup[] {
         }
         return {
           date,
-          label: format(parseISO(date), 'd MMM yyyy, EEEE'),
+          label: format(parseISO(date), 'EEEE, dd.MM.yyyy'),
           transactions: txns,
           dailyNet,
         }

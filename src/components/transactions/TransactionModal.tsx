@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -17,6 +17,9 @@ import { todayISO } from '@/utils/dateUtils'
 import type { Transaction, TransactionType } from '@/types/transaction'
 
 const CURRENCIES = ['EUR', 'USD', 'RUB']
+
+const getLastAccountId = () => localStorage.getItem('lastAccountId') ?? ''
+const saveLastAccountId = (id: string) => { if (id) localStorage.setItem('lastAccountId', id) }
 
 const schema = z.object({
   amount: z.string().min(1),
@@ -41,8 +44,14 @@ interface Props {
   onClose: () => void
 }
 
+const amountInputProps = {
+  inputMode: 'decimal' as const,
+  pattern: '[0-9]*[.,]?[0-9]*',
+  autoComplete: 'off',
+}
+
 export function TransactionModal({ open, editing, onClose }: Props) {
-  const { addTransaction, updateTransaction, deleteTransaction } = useTransactionsStore()
+  const { addTransaction, updateTransaction, deleteTransaction, transactions } = useTransactionsStore()
   const { accounts } = useAccountsStore()
   const { categories } = useCategoriesStore()
   const { baseCurrency } = usePrefsStore()
@@ -56,28 +65,19 @@ export function TransactionModal({ open, editing, onClose }: Props) {
   const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      amount: '',
-      currency: baseCurrency,
-      category_id: '',
-      account_id: '',
-      to_account_id: '',
-      to_amount: '',
-      to_currency: baseCurrency,
-      date: todayISO(),
-      comment: '',
-      debt_subtype: 'lent',
-      debt_ref_id: '',
+      amount: '', currency: baseCurrency, category_id: '', account_id: '',
+      to_account_id: '', to_amount: '', to_currency: baseCurrency,
+      date: todayISO(), comment: '', debt_subtype: 'lent', debt_ref_id: '',
     },
   })
 
   useEffect(() => {
     if (!open) return
     if (editing) {
-      const type = editing.type
       const tabType: TabType =
-        type === 'expense' ? 'expense'
-        : type === 'income' ? 'income'
-        : type === 'transfer' ? 'transfer'
+        editing.type === 'expense' ? 'expense'
+        : editing.type === 'income' ? 'income'
+        : editing.type === 'transfer' ? 'transfer'
         : 'debt'
       setTab(tabType)
       reset({
@@ -94,16 +94,34 @@ export function TransactionModal({ open, editing, onClose }: Props) {
         debt_ref_id: editing.debt_ref_id,
       })
     } else {
+      setTab('expense')
       reset({
-        amount: '', currency: baseCurrency, category_id: '', account_id: '',
+        amount: '', currency: baseCurrency, category_id: '',
+        account_id: getLastAccountId(),
         to_account_id: '', to_amount: '', to_currency: baseCurrency,
         date: todayISO(), comment: '', debt_subtype: 'lent', debt_ref_id: '',
       })
     }
   }, [open, editing, baseCurrency, reset])
 
-  const expenseCategories = categories.filter(c => c.is_expense)
-  const incomeCategories = categories.filter(c => c.is_income)
+  // Category usage counts for sorting
+  const categoryUsage = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const t of transactions) {
+      if (t.category_id) counts[t.category_id] = (counts[t.category_id] ?? 0) + 1
+    }
+    return counts
+  }, [transactions])
+
+  const sortedExpenseCategories = useMemo(() =>
+    [...categories.filter(c => c.is_expense)].sort((a, b) =>
+      (categoryUsage[b.id] ?? 0) - (categoryUsage[a.id] ?? 0)
+    ), [categories, categoryUsage])
+
+  const sortedIncomeCategories = useMemo(() =>
+    [...categories.filter(c => c.is_income)].sort((a, b) =>
+      (categoryUsage[b.id] ?? 0) - (categoryUsage[a.id] ?? 0)
+    ), [categories, categoryUsage])
 
   const onSubmit = async (values: FormValues) => {
     setSaving(true)
@@ -129,6 +147,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
         comment: values.comment,
       }
 
+      saveLastAccountId(values.account_id)
       if (editing) {
         await updateTransaction(editing.id, input)
       } else {
@@ -150,6 +169,84 @@ export function TransactionModal({ open, editing, onClose }: Props) {
 
   const watchAmount = watch('amount')
 
+  const CategoryGrid = ({ cats, fieldName = 'category_id' }: { cats: typeof categories; fieldName?: 'category_id' }) => (
+    <div>
+      <Label>Category</Label>
+      <div className="mt-2 max-h-48 overflow-y-auto rounded-md">
+        <div className="grid grid-cols-4 gap-2">
+          {cats.map(cat => (
+            <Controller key={cat.id} name={fieldName} control={control} render={({ field }) => (
+              <button
+                type="button"
+                onClick={() => field.onChange(cat.id)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors ${field.value === cat.id ? 'border-primary bg-accent' : 'border-border hover:bg-accent'}`}
+              >
+                <CategoryIcon icon={cat.icon} color={cat.color} size={16} />
+                <span className="text-xs truncate w-full text-center">{cat.name}</span>
+              </button>
+            )} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  const DateField = () => (
+    <div>
+      <Label>Date</Label>
+      <input
+        {...register('date')}
+        type="date"
+        required
+        className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+      />
+    </div>
+  )
+
+  const AmountCurrencyRow = () => (
+    <div className="flex gap-2">
+      <div className="flex-1">
+        <Label>Amount</Label>
+        <input
+          {...register('amount')}
+          {...amountInputProps}
+          className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          placeholder="0.00"
+        />
+        {errors.amount && <p className="text-destructive text-xs mt-1">Required</p>}
+      </div>
+      <div className="w-28">
+        <Label>Currency</Label>
+        <Controller name="currency" control={control} render={({ field }) => (
+          <Select value={field.value} onValueChange={field.onChange}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+          </Select>
+        )} />
+      </div>
+    </div>
+  )
+
+  const AccountField = ({ label = 'Account', name = 'account_id' }: { label?: string; name?: 'account_id' | 'to_account_id' }) => (
+    <div>
+      <Label>{label}</Label>
+      <Controller name={name} control={control} render={({ field }) => (
+        <Select value={field.value} onValueChange={field.onChange}>
+          <SelectTrigger className="mt-1"><SelectValue placeholder="Select account" /></SelectTrigger>
+          <SelectContent>{activeAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
+        </Select>
+      )} />
+      {name === 'account_id' && errors.account_id && <p className="text-destructive text-xs mt-1">Required</p>}
+    </div>
+  )
+
+  const CommentField = ({ placeholder = 'Optional' }: { placeholder?: string }) => (
+    <div>
+      <Label>Comment</Label>
+      <input {...register('comment')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder={placeholder} />
+    </div>
+  )
+
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -166,99 +263,33 @@ export function TransactionModal({ open, editing, onClose }: Props) {
               <TabsTrigger value="debt" className="flex-1">Debt</TabsTrigger>
             </TabsList>
 
-            {/* Expense / Income */}
-            {(['expense', 'income'] as const).map(txType => (
-              <TabsContent key={txType} value={txType} className="space-y-4 mt-4">
-                {/* Amount + currency */}
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Label>Amount</Label>
-                    <input
-                      {...register('amount')}
-                      type="number" step="0.01" min="0"
-                      className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="0.00"
-                    />
-                    {errors.amount && <p className="text-destructive text-xs mt-1">Required</p>}
-                  </div>
-                  <div className="w-28">
-                    <Label>Currency</Label>
-                    <Controller name="currency" control={control} render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    )} />
-                  </div>
-                </div>
+            <TabsContent value="expense" className="space-y-4 mt-4">
+              <AmountCurrencyRow />
+              <CategoryGrid cats={sortedExpenseCategories} />
+              <AccountField />
+              <DateField />
+              <CommentField />
+            </TabsContent>
 
-                {/* Category */}
-                <div>
-                  <Label>Category</Label>
-                  <div className="grid grid-cols-4 gap-2 mt-2">
-                    {(txType === 'expense' ? expenseCategories : incomeCategories).map(cat => (
-                      <Controller key={cat.id} name="category_id" control={control} render={({ field }) => (
-                        <button
-                          type="button"
-                          onClick={() => field.onChange(cat.id)}
-                          className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors ${field.value === cat.id ? 'border-primary bg-accent' : 'border-border hover:bg-accent'}`}
-                        >
-                          <CategoryIcon icon={cat.icon} color={cat.color} size={16} />
-                          <span className="text-xs truncate w-full text-center">{cat.name}</span>
-                        </button>
-                      )} />
-                    ))}
-                  </div>
-                </div>
+            <TabsContent value="income" className="space-y-4 mt-4">
+              <AmountCurrencyRow />
+              <CategoryGrid cats={sortedIncomeCategories} />
+              <AccountField />
+              <DateField />
+              <CommentField />
+            </TabsContent>
 
-                {/* Account */}
-                <div>
-                  <Label>Account</Label>
-                  <Controller name="account_id" control={control} render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select account" /></SelectTrigger>
-                      <SelectContent>
-                        {activeAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  )} />
-                  {errors.account_id && <p className="text-destructive text-xs mt-1">Required</p>}
-                </div>
-
-                {/* Date */}
-                <div>
-                  <Label>Date</Label>
-                  <input {...register('date')} type="date" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-
-                {/* Comment */}
-                <div>
-                  <Label>Comment</Label>
-                  <input {...register('comment')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Optional" />
-                </div>
-              </TabsContent>
-            ))}
-
-            {/* Transfer */}
             <TabsContent value="transfer" className="space-y-4 mt-4">
-              <div>
-                <Label>From account</Label>
-                <Controller name="account_id" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select account" /></SelectTrigger>
-                    <SelectContent>
-                      {activeAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-
+              <AccountField label="From account" />
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Label>Amount</Label>
-                  <input {...register('amount')} type="number" step="0.01" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="0.00" />
+                  <input
+                    {...register('amount')}
+                    {...amountInputProps}
+                    className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background"
+                    placeholder="0.00"
+                  />
                 </div>
                 <div className="w-28">
                   <Label>Currency</Label>
@@ -270,23 +301,11 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                   )} />
                 </div>
               </div>
-
-              <div>
-                <Label>To account</Label>
-                <Controller name="to_account_id" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select account" /></SelectTrigger>
-                    <SelectContent>
-                      {activeAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-
+              <AccountField label="To account" name="to_account_id" />
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Label>To amount</Label>
-                  <input {...register('to_amount')} type="number" step="0.01" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder={watchAmount} />
+                  <input {...register('to_amount')} {...amountInputProps} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder={watchAmount} />
                 </div>
                 <div className="w-28">
                   <Label>To currency</Label>
@@ -298,18 +317,10 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                   )} />
                 </div>
               </div>
-
-              <div>
-                <Label>Date</Label>
-                <input {...register('date')} type="date" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" />
-              </div>
-              <div>
-                <Label>Comment</Label>
-                <input {...register('comment')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="Optional" />
-              </div>
+              <DateField />
+              <CommentField />
             </TabsContent>
 
-            {/* Debt */}
             <TabsContent value="debt" className="space-y-4 mt-4">
               <div>
                 <Label>Debt type</Label>
@@ -325,60 +336,18 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                   </div>
                 )} />
               </div>
-
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Label>Amount</Label>
-                  <input {...register('amount')} type="number" step="0.01" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="0.00" />
-                </div>
-                <div className="w-28">
-                  <Label>Currency</Label>
-                  <Controller name="currency" control={control} render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )} />
-                </div>
-              </div>
-
-              <div>
-                <Label>Account</Label>
-                <Controller name="account_id" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select account" /></SelectTrigger>
-                    <SelectContent>{activeAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                )} />
-              </div>
-
-              <div>
-                <Label>Date</Label>
-                <input {...register('date')} type="date" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" />
-              </div>
-              <div>
-                <Label>Counterpart name</Label>
-                <input {...register('comment')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="Name of person" />
-              </div>
-
+              <AmountCurrencyRow />
+              <AccountField />
+              <DateField />
+              <CommentField placeholder="Name of person" />
               {editing && !editing.debt_ref_id && (
                 <Button type="button" variant="outline" className="w-full" onClick={async () => {
-                  // Mark as repaid — create closing transaction
-                  const input = {
-                    date: todayISO(),
-                    type: editing.type,
-                    amount: editing.amount,
-                    currency: editing.currency,
-                    amount_base: 0,
-                    account_id: editing.account_id,
-                    category_id: '',
-                    to_account_id: '',
-                    to_amount: 0,
-                    to_currency: '',
-                    debt_ref_id: editing.id,
-                    comment: editing.comment,
-                  }
-                  await addTransaction(input)
+                  await addTransaction({
+                    date: todayISO(), type: editing.type, amount: editing.amount,
+                    currency: editing.currency, amount_base: 0, account_id: editing.account_id,
+                    category_id: '', to_account_id: '', to_amount: 0, to_currency: '',
+                    debt_ref_id: editing.id, comment: editing.comment,
+                  })
                   onClose()
                 }}>
                   Mark as repaid
@@ -387,13 +356,13 @@ export function TransactionModal({ open, editing, onClose }: Props) {
             </TabsContent>
           </Tabs>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter className="flex-row items-center">
             {editing && (
-              <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)} disabled={saving}>
+              <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)} disabled={saving} className="mr-auto">
                 Delete
               </Button>
             )}
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={() => void handleSubmit(onSubmit)()} disabled={saving}>
                 {saving ? 'Saving...' : 'Save'}

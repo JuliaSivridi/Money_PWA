@@ -116,7 +116,7 @@ export function AccountModal({ open, editing, onClose }: Props) {
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-row justify-end gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => void handleSubmit(onSubmit)()} disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save'}
