@@ -4,11 +4,11 @@ import type { LucideIcon } from 'lucide-react'
 
 const ICON_NAMES = [
   'ShoppingCart', 'UtensilsCrossed', 'Car', 'Bus', 'Heart', 'Pill',
-  'Shirt', 'Home', 'Zap', 'Wifi', 'Gamepad2', 'Plane',
-  'GraduationCap', 'Gift', 'Dumbbell', 'Coffee', 'Baby', 'PawPrint',
-  'Wrench', 'Banknote', 'TrendingUp', 'BookOpen', 'Music', 'Camera',
-  'Scissors', 'Sparkles', 'Tag', 'ShoppingBag', 'Fuel', 'Train',
-  'Pizza', 'Salad', 'Wine', 'Beer', 'IceCream', 'Cake',
+  'Shirt', 'Home', 'Zap', 'Wifi', 'Smartphone', 'Gamepad2',
+  'Plane', 'GraduationCap', 'Gift', 'Dumbbell', 'Coffee', 'Smile',
+  'Sprout', 'Baby', 'PawPrint', 'Wrench', 'Banknote', 'TrendingUp',
+  'HandCoins', 'Landmark', 'PiggyBank', 'BookOpen', 'Music',
+  'Scissors', 'Sparkles', 'Tag', 'ShoppingBag', 'Fuel', 'Train', 'Beer',
 ]
 
 interface Props {

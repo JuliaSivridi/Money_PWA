@@ -68,7 +68,6 @@ export function SettingsPage() {
         <h3 className="font-semibold">Spreadsheet</h3>
         <div className="text-sm text-muted-foreground">
           <p className="font-medium text-foreground">{spreadsheetName || 'db_money'}</p>
-          <p className="text-xs mt-0.5 truncate">{spreadsheetId}</p>
         </div>
         {sheets.length === 0 ? (
           <Button size="sm" variant="outline" onClick={() => void loadSheets()} disabled={loadingSheets}>

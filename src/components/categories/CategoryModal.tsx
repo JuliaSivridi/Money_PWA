@@ -131,7 +131,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
               </div>
               {watchExpense && (
                 <div>
-                  <Label>Monthly limit (base currency, 0 = none)</Label>
+                  <Label>Monthly limit (0 = none)</Label>
                   <input {...register('expense_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="0" />
                 </div>
               )}
@@ -146,18 +146,18 @@ export function CategoryModal({ open, editing, onClose }: Props) {
               </div>
               {watchIncome && (
                 <div>
-                  <Label>Monthly limit (base currency, 0 = none)</Label>
+                  <Label>Monthly limit (0 = none)</Label>
                   <input {...register('income_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="0" />
                 </div>
               )}
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-row items-center">
             {editing && (
-              <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)}>Delete</Button>
+              <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)} className="mr-auto">Delete</Button>
             )}
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={() => void handleSubmit(onSubmit)()} disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : 'Save'}
