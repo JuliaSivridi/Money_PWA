@@ -1,0 +1,124 @@
+import { create } from 'zustand'
+import { db } from '@/services/db'
+import { enqueue } from '@/services/offlineQueue'
+import { scheduleFlush } from '@/services/syncService'
+import { generateId } from '@/utils/uuid'
+import { now } from '@/utils/dateUtils'
+import { convertToBase } from '@/utils/currencyUtils'
+import { useAccountsStore } from './accountsStore'
+import { useExchangeRateStore } from './exchangeRateStore'
+import { usePrefsStore } from './prefsStore'
+import type { Transaction, TransactionInput } from '@/types/transaction'
+
+function computeBalanceDelta(t: Transaction): { accountId: string; delta: number; toAccountId?: string; toDelta?: number } {
+  switch (t.type) {
+    case 'expense':       return { accountId: t.account_id, delta: -t.amount }
+    case 'income':        return { accountId: t.account_id, delta: t.amount }
+    case 'transfer':      return { accountId: t.account_id, delta: -t.amount, toAccountId: t.to_account_id, toDelta: t.to_amount }
+    case 'debt_lent':     return { accountId: t.account_id, delta: t.debt_ref_id ? t.amount : -t.amount }
+    case 'debt_borrowed': return { accountId: t.account_id, delta: t.debt_ref_id ? -t.amount : t.amount }
+    default:              return { accountId: t.account_id, delta: 0 }
+  }
+}
+
+interface TransactionsState {
+  transactions: Transaction[]
+  addTransaction: (input: TransactionInput) => Promise<Transaction>
+  updateTransaction: (id: string, patch: Partial<TransactionInput>) => Promise<void>
+  deleteTransaction: (id: string) => Promise<void>
+  upsertMany: (incoming: Transaction[]) => Promise<void>
+  loadFromDb: () => Promise<void>
+}
+
+export const useTransactionsStore = create<TransactionsState>((set, get) => ({
+  transactions: [],
+
+  addTransaction: async (input) => {
+    const ts = now()
+    const { rates, baseCurrency } = useExchangeRateStore.getState()
+    const { baseCurrency: prefBase } = usePrefsStore.getState()
+    const base = prefBase || baseCurrency
+    const amount_base = convertToBase(input.amount, input.currency, base, rates)
+    const t: Transaction = { ...input, id: generateId('txn'), amount_base, created_at: ts, updated_at: ts }
+
+    await db.transactions.add(t)
+    await enqueue('transaction', 'create', t.id, t as unknown as Record<string, unknown>)
+    set((s) => ({ transactions: [t, ...s.transactions] }))
+
+    const d = computeBalanceDelta(t)
+    await useAccountsStore.getState().adjustBalance(d.accountId, d.delta)
+    if (d.toAccountId && d.toDelta != null) {
+      await useAccountsStore.getState().adjustBalance(d.toAccountId, d.toDelta)
+    }
+
+    scheduleFlush()
+    return t
+  },
+
+  updateTransaction: async (id, patch) => {
+    const existing = get().transactions.find(t => t.id === id)
+    if (!existing) return
+
+    // Reverse old balance effect
+    const oldDelta = computeBalanceDelta(existing)
+    await useAccountsStore.getState().adjustBalance(oldDelta.accountId, -oldDelta.delta)
+    if (oldDelta.toAccountId && oldDelta.toDelta != null) {
+      await useAccountsStore.getState().adjustBalance(oldDelta.toAccountId, -oldDelta.toDelta)
+    }
+
+    const { rates, baseCurrency } = useExchangeRateStore.getState()
+    const { baseCurrency: prefBase } = usePrefsStore.getState()
+    const base = prefBase || baseCurrency
+    const merged = { ...existing, ...patch }
+    const amount_base = convertToBase(merged.amount, merged.currency, base, rates)
+    const updated: Transaction = { ...merged, amount_base, updated_at: now() }
+
+    await db.transactions.where('id').equals(id).modify(updated)
+    await enqueue('transaction', 'update', id, updated as unknown as Record<string, unknown>)
+    set((s) => ({ transactions: s.transactions.map(t => t.id === id ? updated : t) }))
+
+    // Apply new balance effect
+    const newDelta = computeBalanceDelta(updated)
+    await useAccountsStore.getState().adjustBalance(newDelta.accountId, newDelta.delta)
+    if (newDelta.toAccountId && newDelta.toDelta != null) {
+      await useAccountsStore.getState().adjustBalance(newDelta.toAccountId, newDelta.toDelta)
+    }
+
+    scheduleFlush()
+  },
+
+  deleteTransaction: async (id) => {
+    const existing = get().transactions.find(t => t.id === id)
+    if (!existing) return
+
+    // Reverse balance effect
+    const d = computeBalanceDelta(existing)
+    await useAccountsStore.getState().adjustBalance(d.accountId, -d.delta)
+    if (d.toAccountId && d.toDelta != null) {
+      await useAccountsStore.getState().adjustBalance(d.toAccountId, -d.toDelta)
+    }
+
+    await db.transactions.where('id').equals(id).delete()
+    await enqueue('transaction', 'delete', id, existing as unknown as Record<string, unknown>)
+    set((s) => ({ transactions: s.transactions.filter(t => t.id !== id) }))
+    scheduleFlush()
+  },
+
+  upsertMany: async (incoming) => {
+    const existing = await db.transactions.toArray()
+    const existingMap = new Map(existing.map(t => [t.id, t]))
+    const toStore: Transaction[] = []
+    for (const item of incoming) {
+      const local = existingMap.get(item.id)
+      if (!local || item.updated_at > local.updated_at) toStore.push(item)
+    }
+    if (toStore.length > 0) await db.transactions.bulkPut(toStore)
+    const all = await db.transactions.toArray()
+    set({ transactions: all.sort((a, b) => b.date.localeCompare(a.date)) })
+  },
+
+  loadFromDb: async () => {
+    const all = await db.transactions.toArray()
+    set({ transactions: all.sort((a, b) => b.date.localeCompare(a.date)) })
+  },
+}))
