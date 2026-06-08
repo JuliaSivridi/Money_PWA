@@ -28,12 +28,12 @@ function SortableCategory({ category, onClick }: { category: Category; onClick: 
       <div className="flex-1 flex items-center gap-2 min-w-0">
         <span className="font-medium truncate">{category.name}</span>
         {category.is_expense && (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 whitespace-nowrap">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-rose-100/60 text-rose-700/80 dark:bg-rose-900/30 dark:text-rose-300/70 whitespace-nowrap">
             {category.expense_limit > 0 ? `Exp ${category.expense_limit}` : 'Expense'}
           </span>
         )}
         {category.is_income && (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400 whitespace-nowrap">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-100/60 text-emerald-700/80 dark:bg-emerald-900/30 dark:text-emerald-300/70 whitespace-nowrap">
             {category.income_limit > 0 ? `Inc ${category.income_limit}` : 'Income'}
           </span>
         )}
