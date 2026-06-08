@@ -157,7 +157,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
             {editing && (
               <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)} className="mr-auto">Delete</Button>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 ml-auto">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={() => void handleSubmit(onSubmit)()} disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : 'Save'}

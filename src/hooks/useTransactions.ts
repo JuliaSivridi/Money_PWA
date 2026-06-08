@@ -8,8 +8,8 @@ function formatGroupLabel(date: string): string {
   const d = parseISO(date)
   const currentYear = getYear(new Date())
   const datePart = getYear(d) === currentYear
-    ? format(d, 'dd.MM')
-    : format(d, 'dd.MM.yyyy')
+    ? format(d, 'dd MMM')
+    : format(d, 'dd MMM yyyy')
   return `${datePart} · ${format(d, 'EEEE')}`
 }
 
