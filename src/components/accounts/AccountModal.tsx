@@ -68,7 +68,7 @@ export function AccountModal({ open, editing, onClose }: Props) {
         <div className="space-y-4">
           <div>
             <Label>Name</Label>
-            <input {...register('name')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="Account name" />
+            <input {...register('name')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="Account name" />
             {errors.name && <p className="text-destructive text-xs mt-1">Required</p>}
           </div>
 
@@ -102,7 +102,7 @@ export function AccountModal({ open, editing, onClose }: Props) {
           {!editing && (
             <div>
               <Label>Opening balance</Label>
-              <input {...register('opening_balance')} type="number" step="0.01" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="0.00" />
+              <input {...register('opening_balance')} type="number" step="0.01" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="0.00" />
             </div>
           )}
 

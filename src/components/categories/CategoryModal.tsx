@@ -119,7 +119,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
 
             <div>
               <Label>Name</Label>
-              <input {...register('name')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="Category name" />
+              <input {...register('name')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="Category name" />
             </div>
 
             <div className="space-y-2">
@@ -132,7 +132,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
               {watchExpense && (
                 <div>
                   <Label>Monthly limit (0 = none)</Label>
-                  <input {...register('expense_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="0" />
+                  <input {...register('expense_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="0" />
                 </div>
               )}
             </div>
@@ -147,7 +147,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
               {watchIncome && (
                 <div>
                   <Label>Monthly limit (0 = none)</Label>
-                  <input {...register('income_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder="0" />
+                  <input {...register('income_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="0" />
                 </div>
               )}
             </div>
