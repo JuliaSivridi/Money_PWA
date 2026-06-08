@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -9,17 +9,82 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CategoryIcon } from '@/components/common/CategoryIcon'
+import { NumericKeyboard } from '@/components/common/NumericKeyboard'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
 import { usePrefsStore } from '@/store/prefsStore'
 import { todayISO } from '@/utils/dateUtils'
+import { cn } from '@/lib/utils'
 import type { Transaction, TransactionType } from '@/types/transaction'
 
 const CURRENCIES = ['EUR', 'USD', 'RUB']
 
 const getLastAccountId = () => localStorage.getItem('lastAccountId') ?? ''
 const saveLastAccountId = (id: string) => { if (id) localStorage.setItem('lastAccountId', id) }
+
+// ISO "yyyy-MM-dd" ↔ display "dd.MM.yyyy"
+function isoToDisplay(iso: string) {
+  if (!iso || iso.length < 10) return ''
+  return `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`
+}
+
+function AmountInput({ value, onChange, placeholder = '0.00' }: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const blurTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const handleFocus = () => {
+    clearTimeout(blurTimer.current)
+    setOpen(true)
+  }
+  const handleBlur = () => {
+    blurTimer.current = setTimeout(() => setOpen(false), 120)
+  }
+  const handleClose = () => {
+    clearTimeout(blurTimer.current)
+    setOpen(false)
+  }
+
+  return (
+    <>
+      <input
+        type="text"
+        inputMode="none"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className={cn(
+          'w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring',
+          open && 'ring-2 ring-ring border-ring',
+        )}
+      />
+      {open && <NumericKeyboard value={value} onChange={onChange} onClose={handleClose} />}
+    </>
+  )
+}
+
+function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative mt-1">
+      <div className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm text-foreground pointer-events-none">
+        {value ? isoToDisplay(value) : <span className="text-muted-foreground">DD.MM.YYYY</span>}
+      </div>
+      <input
+        type="date"
+        value={value}
+        onChange={e => { if (e.target.value) onChange(e.target.value) }}
+        required
+        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+      />
+    </div>
+  )
+}
 
 const schema = z.object({
   amount: z.string().min(1),
@@ -35,19 +100,12 @@ const schema = z.object({
   debt_ref_id: z.string(),
 })
 type FormValues = z.infer<typeof schema>
-
 type TabType = 'expense' | 'income' | 'transfer' | 'debt'
 
 interface Props {
   open: boolean
   editing?: Transaction | null
   onClose: () => void
-}
-
-const amountInputProps = {
-  inputMode: 'decimal' as const,
-  pattern: '[0-9]*[.,]?[0-9]*',
-  autoComplete: 'off',
 }
 
 export function TransactionModal({ open, editing, onClose }: Props) {
@@ -62,7 +120,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
 
   const activeAccounts = accounts.filter(a => !a.archived)
 
-  const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
+  const { handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       amount: '', currency: baseCurrency, category_id: '', account_id: '',
@@ -81,15 +139,12 @@ export function TransactionModal({ open, editing, onClose }: Props) {
         : 'debt'
       setTab(tabType)
       reset({
-        amount: String(editing.amount),
-        currency: editing.currency,
-        category_id: editing.category_id,
-        account_id: editing.account_id,
+        amount: String(editing.amount), currency: editing.currency,
+        category_id: editing.category_id, account_id: editing.account_id,
         to_account_id: editing.to_account_id,
         to_amount: editing.to_amount ? String(editing.to_amount) : '',
         to_currency: editing.to_currency || baseCurrency,
-        date: editing.date,
-        comment: editing.comment,
+        date: editing.date, comment: editing.comment,
         debt_subtype: editing.type === 'debt_borrowed' ? 'borrowed' : 'lent',
         debt_ref_id: editing.debt_ref_id,
       })
@@ -104,7 +159,6 @@ export function TransactionModal({ open, editing, onClose }: Props) {
     }
   }, [open, editing, baseCurrency, reset])
 
-  // Category usage counts for sorting
   const categoryUsage = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const t of transactions) {
@@ -113,15 +167,13 @@ export function TransactionModal({ open, editing, onClose }: Props) {
     return counts
   }, [transactions])
 
-  const sortedExpenseCategories = useMemo(() =>
-    [...categories.filter(c => c.is_expense)].sort((a, b) =>
-      (categoryUsage[b.id] ?? 0) - (categoryUsage[a.id] ?? 0)
-    ), [categories, categoryUsage])
+  const sortedExpense = useMemo(() =>
+    [...categories.filter(c => c.is_expense)].sort((a, b) => (categoryUsage[b.id] ?? 0) - (categoryUsage[a.id] ?? 0)),
+    [categories, categoryUsage])
 
-  const sortedIncomeCategories = useMemo(() =>
-    [...categories.filter(c => c.is_income)].sort((a, b) =>
-      (categoryUsage[b.id] ?? 0) - (categoryUsage[a.id] ?? 0)
-    ), [categories, categoryUsage])
+  const sortedIncome = useMemo(() =>
+    [...categories.filter(c => c.is_income)].sort((a, b) => (categoryUsage[b.id] ?? 0) - (categoryUsage[a.id] ?? 0)),
+    [categories, categoryUsage])
 
   const onSubmit = async (values: FormValues) => {
     setSaving(true)
@@ -132,27 +184,19 @@ export function TransactionModal({ open, editing, onClose }: Props) {
       else if (tab === 'transfer') type = 'transfer'
       else type = values.debt_subtype === 'lent' ? 'debt_lent' : 'debt_borrowed'
 
+      saveLastAccountId(values.account_id)
       const input = {
-        date: values.date,
-        type,
+        date: values.date, type,
         amount: parseFloat(values.amount) || 0,
-        currency: values.currency,
-        amount_base: 0,
+        currency: values.currency, amount_base: 0,
         account_id: values.account_id,
         category_id: tab === 'transfer' || tab === 'debt' ? '' : values.category_id,
         to_account_id: tab === 'transfer' ? values.to_account_id : '',
         to_amount: tab === 'transfer' ? (parseFloat(values.to_amount) || parseFloat(values.amount) || 0) : 0,
         to_currency: tab === 'transfer' ? values.to_currency : '',
-        debt_ref_id: values.debt_ref_id,
-        comment: values.comment,
+        debt_ref_id: values.debt_ref_id, comment: values.comment,
       }
-
-      saveLastAccountId(values.account_id)
-      if (editing) {
-        await updateTransaction(editing.id, input)
-      } else {
-        await addTransaction(input)
-      }
+      editing ? await updateTransaction(editing.id, input) : await addTransaction(input)
       onClose()
     } finally {
       setSaving(false)
@@ -169,65 +213,23 @@ export function TransactionModal({ open, editing, onClose }: Props) {
 
   const watchAmount = watch('amount')
 
-  const CategoryGrid = ({ cats, fieldName = 'category_id' }: { cats: typeof categories; fieldName?: 'category_id' }) => (
-    <div>
-      <Label>Category</Label>
-      <div className="mt-2 max-h-48 overflow-y-auto rounded-md">
-        <div className="grid grid-cols-4 gap-2">
-          {cats.map(cat => (
-            <Controller key={cat.id} name={fieldName} control={control} render={({ field }) => (
-              <button
-                type="button"
-                onClick={() => field.onChange(cat.id)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors ${field.value === cat.id ? 'border-primary bg-accent' : 'border-border hover:bg-accent'}`}
-              >
-                <CategoryIcon icon={cat.icon} color={cat.color} size={16} />
-                <span className="text-xs truncate w-full text-center">{cat.name}</span>
-              </button>
-            )} />
-          ))}
-        </div>
-      </div>
+  // ─── Shared sub-components ───────────────────────────────────────────
+
+  const CurrencySelect = ({ name }: { name: 'currency' | 'to_currency' }) => (
+    <div className="w-28">
+      <Label>Currency</Label>
+      <Controller name={name} control={control} render={({ field }) => (
+        <Select value={field.value} onValueChange={field.onChange}>
+          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+          <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+        </Select>
+      )} />
     </div>
   )
 
-  const DateField = () => (
-    <div>
-      <Label>Date</Label>
-      <input
-        {...register('date')}
-        type="date"
-        required
-        className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-      />
-    </div>
-  )
-
-  const AmountCurrencyRow = () => (
-    <div className="flex gap-2">
-      <div className="flex-1">
-        <Label>Amount</Label>
-        <input
-          {...register('amount')}
-          {...amountInputProps}
-          className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          placeholder="0.00"
-        />
-        {errors.amount && <p className="text-destructive text-xs mt-1">Required</p>}
-      </div>
-      <div className="w-28">
-        <Label>Currency</Label>
-        <Controller name="currency" control={control} render={({ field }) => (
-          <Select value={field.value} onValueChange={field.onChange}>
-            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-          </Select>
-        )} />
-      </div>
-    </div>
-  )
-
-  const AccountField = ({ label = 'Account', name = 'account_id' }: { label?: string; name?: 'account_id' | 'to_account_id' }) => (
+  const AccountSelect = ({ label = 'Account', name = 'account_id' as const }: {
+    label?: string; name?: 'account_id' | 'to_account_id'
+  }) => (
     <div>
       <Label>{label}</Label>
       <Controller name={name} control={control} render={({ field }) => (
@@ -240,10 +242,62 @@ export function TransactionModal({ open, editing, onClose }: Props) {
     </div>
   )
 
+  const DateField = () => (
+    <div>
+      <Label>Date</Label>
+      <Controller name="date" control={control} render={({ field }) => (
+        <DateInput value={field.value} onChange={field.onChange} />
+      )} />
+    </div>
+  )
+
   const CommentField = ({ placeholder = 'Optional' }: { placeholder?: string }) => (
     <div>
       <Label>Comment</Label>
-      <input {...register('comment')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder={placeholder} />
+      <Controller name="comment" control={control} render={({ field }) => (
+        <input {...field} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder={placeholder} />
+      )} />
+    </div>
+  )
+
+  const AmountRow = ({ onCurrencyChange }: { onCurrencyChange?: (v: string) => void }) => (
+    <div className="flex gap-2">
+      <div className="flex-1">
+        <Label>Amount</Label>
+        <Controller name="amount" control={control} render={({ field }) => (
+          <AmountInput value={field.value} onChange={field.onChange} />
+        )} />
+        {errors.amount && <p className="text-destructive text-xs mt-1">Required</p>}
+      </div>
+      <div className="w-28">
+        <Label>Currency</Label>
+        <Controller name="currency" control={control} render={({ field }) => (
+          <Select value={field.value} onValueChange={v => { field.onChange(v); onCurrencyChange?.(v) }}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+          </Select>
+        )} />
+      </div>
+    </div>
+  )
+
+  const CategoryGrid = ({ cats }: { cats: typeof categories }) => (
+    <div>
+      <Label>Category</Label>
+      <div className="mt-2 max-h-44 overflow-y-auto rounded-md">
+        <div className="grid grid-cols-4 gap-2">
+          {cats.map(cat => (
+            <Controller key={cat.id} name="category_id" control={control} render={({ field }) => (
+              <button type="button" onClick={() => field.onChange(cat.id)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors ${field.value === cat.id ? 'border-primary bg-accent' : 'border-border hover:bg-accent'}`}
+              >
+                <CategoryIcon icon={cat.icon} color={cat.color} size={16} />
+                <span className="text-xs truncate w-full text-center">{cat.name}</span>
+              </button>
+            )} />
+          ))}
+        </div>
+      </div>
     </div>
   )
 
@@ -264,58 +318,33 @@ export function TransactionModal({ open, editing, onClose }: Props) {
             </TabsList>
 
             <TabsContent value="expense" className="space-y-4 mt-4">
-              <AmountCurrencyRow />
-              <CategoryGrid cats={sortedExpenseCategories} />
-              <AccountField />
+              <AmountRow />
+              <CategoryGrid cats={sortedExpense} />
+              <AccountSelect />
               <DateField />
               <CommentField />
             </TabsContent>
 
             <TabsContent value="income" className="space-y-4 mt-4">
-              <AmountCurrencyRow />
-              <CategoryGrid cats={sortedIncomeCategories} />
-              <AccountField />
+              <AmountRow />
+              <CategoryGrid cats={sortedIncome} />
+              <AccountSelect />
               <DateField />
               <CommentField />
             </TabsContent>
 
             <TabsContent value="transfer" className="space-y-4 mt-4">
-              <AccountField label="From account" />
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Label>Amount</Label>
-                  <input
-                    {...register('amount')}
-                    {...amountInputProps}
-                    className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="w-28">
-                  <Label>Currency</Label>
-                  <Controller name="currency" control={control} render={({ field }) => (
-                    <Select value={field.value} onValueChange={(v) => { field.onChange(v); setValue('to_currency', v); setValue('to_amount', watchAmount) }}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )} />
-                </div>
-              </div>
-              <AccountField label="To account" name="to_account_id" />
+              <AccountSelect label="From account" />
+              <AmountRow onCurrencyChange={v => { setValue('to_currency', v); setValue('to_amount', watchAmount) }} />
+              <AccountSelect label="To account" name="to_account_id" />
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Label>To amount</Label>
-                  <input {...register('to_amount')} {...amountInputProps} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background" placeholder={watchAmount} />
-                </div>
-                <div className="w-28">
-                  <Label>To currency</Label>
-                  <Controller name="to_currency" control={control} render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
+                  <Controller name="to_amount" control={control} render={({ field }) => (
+                    <AmountInput value={field.value} onChange={field.onChange} placeholder={watchAmount} />
                   )} />
                 </div>
+                <CurrencySelect name="to_currency" />
               </div>
               <DateField />
               <CommentField />
@@ -328,16 +357,15 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                   <div className="flex gap-2 mt-1">
                     {(['lent', 'borrowed'] as const).map(v => (
                       <button key={v} type="button" onClick={() => field.onChange(v)}
-                        className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${field.value === v ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-accent'}`}
-                      >
+                        className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${field.value === v ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-accent'}`}>
                         {v === 'lent' ? 'I lent' : 'I borrowed'}
                       </button>
                     ))}
                   </div>
                 )} />
               </div>
-              <AmountCurrencyRow />
-              <AccountField />
+              <AmountRow />
+              <AccountSelect />
               <DateField />
               <CommentField placeholder="Name of person" />
               {editing && !editing.debt_ref_id && (
@@ -349,9 +377,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                     debt_ref_id: editing.id, comment: editing.comment,
                   })
                   onClose()
-                }}>
-                  Mark as repaid
-                </Button>
+                }}>Mark as repaid</Button>
               )}
             </TabsContent>
           </Tabs>
@@ -362,10 +388,10 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                 Delete
               </Button>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 ml-auto">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={() => void handleSubmit(onSubmit)()} disabled={saving}>
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? 'Saving…' : 'Save'}
               </Button>
             </div>
           </DialogFooter>

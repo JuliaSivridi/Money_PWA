@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/Money_PWA/icons/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#e07e38" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#e07e38" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#e07e38" />
     <title>Money</title>
   </head>
-  <body style="background-color:#e07e38">
+  <body>
+    <div id="splash" style="position:fixed;inset:0;background:#ffffff;display:flex;align-items:center;justify-content:center;z-index:9999">
+      <img src="/Money_PWA/icons/icon.svg" alt="" style="width:88px;height:88px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,.15)" />
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

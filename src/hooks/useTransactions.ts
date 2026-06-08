@@ -1,8 +1,17 @@
 import { useMemo } from 'react'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useUIStore, type FilterState } from '@/store/uiStore'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, getYear } from 'date-fns'
 import type { Transaction } from '@/types/transaction'
+
+function formatGroupLabel(date: string): string {
+  const d = parseISO(date)
+  const currentYear = getYear(new Date())
+  const datePart = getYear(d) === currentYear
+    ? format(d, 'dd.MM')
+    : format(d, 'dd.MM.yyyy')
+  return `${datePart} · ${format(d, 'EEEE')}`
+}
 
 export interface DateGroup {
   date: string
@@ -30,7 +39,7 @@ export function useTransactionsByDate(): DateGroup[] {
         }
         return {
           date,
-          label: format(parseISO(date), 'EEEE, dd.MM.yyyy'),
+          label: formatGroupLabel(date),
           transactions: txns,
           dailyNet,
         }
