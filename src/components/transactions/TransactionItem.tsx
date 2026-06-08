@@ -1,3 +1,4 @@
+import { Redo2 } from 'lucide-react'
 import { useCategoriesStore } from '@/store/categoriesStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { CategoryIcon } from '@/components/common/CategoryIcon'
@@ -10,20 +11,6 @@ interface Props {
   onClick: () => void
 }
 
-const AMOUNT_COLORS: Record<string, string> = {
-  expense: 'text-red-400',
-  debt_lent: 'text-red-400',
-  income: 'text-green-400',
-  debt_borrowed: 'text-green-400',
-  transfer: 'text-gray-400',
-}
-
-function amountSign(type: string): string {
-  if (type === 'income' || type === 'debt_borrowed') return '+'
-  if (type === 'expense' || type === 'debt_lent') return '−'
-  return ''
-}
-
 export function TransactionItem({ transaction: t, onClick }: Props) {
   const { categories } = useCategoriesStore()
   const { accounts } = useAccountsStore()
@@ -32,29 +19,61 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
   const account = accounts.find(a => a.id === t.account_id)
   const toAccount = accounts.find(a => a.id === t.to_account_id)
 
-  const displayName = t.type === 'transfer'
-    ? `${account?.name ?? '?'} → ${toAccount?.name ?? '?'}`
-    : category?.name ?? t.comment ?? t.type
+  const isTransfer = t.type === 'transfer'
+  const isIncome = t.type === 'income' || t.type === 'debt_borrowed'
+  const isExpense = t.type === 'expense' || t.type === 'debt_lent'
+
+  const crossCurrency = isTransfer && t.to_currency && t.to_currency !== t.currency
 
   return (
     <button
       onClick={onClick}
       className="flex items-center gap-3 w-full px-4 py-3 hover:bg-accent transition-colors text-left"
     >
-      {category ? (
+      {/* Icon */}
+      {isTransfer ? (
+        <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+          <Redo2 className="w-4 h-4 text-muted-foreground" />
+        </div>
+      ) : category ? (
         <CategoryIcon icon={category.icon} color={category.color} />
       ) : (
         <div className="w-7 h-7 rounded-full bg-muted flex-shrink-0" />
       )}
 
+      {/* Name + account lines */}
       <div className="flex-1 min-w-0">
-        <p className="truncate">{displayName}</p>
-        <p className="text-muted-foreground text-xs truncate">{account?.name ?? ''}</p>
+        <p className="truncate">
+          {isTransfer ? (toAccount?.name ?? '?') : (category?.name ?? t.comment ?? t.type)}
+        </p>
+        <p className="text-muted-foreground text-xs truncate">
+          {account?.name ?? ''}
+        </p>
       </div>
 
-      <span className={cn('font-medium flex-shrink-0', AMOUNT_COLORS[t.type] ?? 'text-foreground')}>
-        {amountSign(t.type)}{formatAmount(t.amount, t.currency)}
-      </span>
+      {/* Amount(s) */}
+      <div className="text-right flex-shrink-0">
+        {isTransfer ? (
+          crossCurrency ? (
+            <>
+              <p className="font-medium text-green-400">
+                +{formatAmount(t.to_amount || t.amount, t.to_currency || t.currency)}
+              </p>
+              <p className="text-xs text-red-400">
+                −{formatAmount(t.amount, t.currency)}
+              </p>
+            </>
+          ) : (
+            <p className="font-medium text-muted-foreground">
+              {formatAmount(t.amount, t.currency)}
+            </p>
+          )
+        ) : (
+          <p className={cn('font-medium', isIncome ? 'text-green-400' : isExpense ? 'text-red-400' : 'text-foreground')}>
+            {isIncome ? '+' : isExpense ? '−' : ''}{formatAmount(t.amount, t.currency)}
+          </p>
+        )}
+      </div>
     </button>
   )
 }

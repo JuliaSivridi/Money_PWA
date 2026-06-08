@@ -24,16 +24,16 @@ export function NumericKeyboard({ value, onChange }: Props) {
   }
 
   return (
-    <div className="mt-1 border border-border rounded-md overflow-hidden">
+    <div className="divide-y divide-border">
       {ROWS.map((row, ri) => (
-        <div key={ri} className="flex border-b border-border/40 last:border-b-0">
+        <div key={ri} className="flex divide-x divide-border">
           {row.map(key => (
             <button
               key={key}
               type="button"
               onPointerDown={e => { e.preventDefault(); press(key) }}
               style={{ touchAction: 'manipulation' }}
-              className="flex-1 py-3 text-lg font-medium border-r border-border/40 last:border-r-0 bg-background active:bg-accent transition-colors select-none"
+              className="flex-1 py-3 text-lg font-medium bg-background active:bg-accent transition-colors select-none"
             >
               {key}
             </button>
