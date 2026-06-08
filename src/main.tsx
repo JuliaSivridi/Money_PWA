@@ -8,8 +8,3 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
-
-// Remove splash screen after React's first paint
-requestAnimationFrame(() => requestAnimationFrame(() => {
-  document.getElementById('splash')?.remove()
-}))

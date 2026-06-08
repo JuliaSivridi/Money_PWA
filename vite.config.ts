@@ -15,12 +15,12 @@ export default defineConfig({
         short_name: 'Money',
         description: 'Personal finance tracker with Google Sheets sync',
         theme_color: '#e07e38',
-        background_color: '#ffffff',
+        background_color: '#e07e38',
         display: 'standalone',
         start_url: '/Money_PWA/',
+        scope: '/Money_PWA/',
         icons: [
-          { src: '/Money_PWA/icons/icon.svg', sizes: 'any', type: 'image/svg+xml' },
-          { src: '/Money_PWA/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+          { src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
         ],
       },
       workbox: {

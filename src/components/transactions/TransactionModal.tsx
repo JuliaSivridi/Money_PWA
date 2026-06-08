@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -33,28 +33,23 @@ export function AmountInput({ value, onChange, placeholder = '0.00' }: {
   value: string; onChange: (v: string) => void; placeholder?: string
 }) {
   const [open, setOpen] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  const openKb = () => { clearTimeout(timer.current); setOpen(true) }
-  const scheduleClose = () => { timer.current = setTimeout(() => setOpen(false), 150) }
-  const closeKb = () => { clearTimeout(timer.current); setOpen(false) }
 
   return (
     <>
-      <input
-        type="text"
-        inputMode="none"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onFocus={openKb}
-        onBlur={scheduleClose}
-        placeholder={placeholder}
+      <div
+        role="button"
+        tabIndex={0}
+        onPointerDown={e => { e.preventDefault(); setOpen(true) }}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(true) }}
         className={cn(
-          'w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring',
-          open && 'ring-2 ring-ring',
+          'w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground cursor-text select-none min-h-[38px]',
+          open ? 'border-ring ring-2 ring-ring' : 'border-input',
+          !value && 'text-muted-foreground',
         )}
-      />
-      {open && <NumericKeyboard value={value} onChange={onChange} onClose={closeKb} />}
+      >
+        {value || placeholder}
+      </div>
+      {open && <NumericKeyboard value={value} onChange={onChange} onClose={() => setOpen(false)} />}
     </>
   )
 }
