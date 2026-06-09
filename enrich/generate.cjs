@@ -52,18 +52,18 @@ function zenDateToISO(s) {
 const NOW = '2026-06-09T12:00:00.000Z'
 
 const ACCOUNT_DEFS = [
-  { zen: '€ S-Pankki',        name: 'S-Pankki',          currency: 'EUR', type: 'card',       color: '#3b82f6' },
-  { zen: '€ Wise',            name: 'Wise',               currency: 'EUR', type: 'card',       color: '#06b6d4' },
-  { zen: '€ Cash',            name: '€ Cash',             currency: 'EUR', type: 'cash',       color: '#10b981' },
-  { zen: '€ Revolut',         name: 'Revolut',            currency: 'EUR', type: 'card',       color: '#8b5cf6' },
-  { zen: '₽ Tinkoff Debit',   name: 'Tinkoff Debit',     currency: 'RUB', type: 'card',       color: '#ef4444' },
-  { zen: '₽ Tinkoff BigSave', name: 'Tinkoff BigSave',   currency: 'RUB', type: 'savings',    color: '#f97316' },
-  { zen: '₽ Tinkoff Save',    name: 'Tinkoff Save',      currency: 'RUB', type: 'savings',    color: '#f97316' },
+  { zen: '€ S-Pankki',        name: 'S-Pankki',          currency: 'EUR', type: 'card',       color: '#00aa46' },
+  { zen: '€ Wise',            name: 'Wise',               currency: 'EUR', type: 'card',       color: '#9fe870' },
+  { zen: '€ Cash',            name: '€ Cash',             currency: 'EUR', type: 'cash',       color: '#59575c' },
+  { zen: '€ Revolut',         name: 'Revolut',            currency: 'EUR', type: 'card',       color: '#234fa6' },
+  { zen: '₽ Tinkoff Debit',   name: 'Tinkoff Debit',     currency: 'RUB', type: 'card',       color: '#ffdd2d' },
+  { zen: '₽ Tinkoff BigSave', name: 'Tinkoff BigSave',   currency: 'RUB', type: 'savings',    color: '#b89e16' },
+  { zen: '₽ Tinkoff Save',    name: 'Tinkoff Save',      currency: 'RUB', type: 'savings',    color: '#b89e16' },
   { zen: '₽ Cash',            name: '₽ Cash',             currency: 'RUB', type: 'cash',       color: '#f59e0b' },
-  { zen: 'Tinkoff Brokerage', name: 'Tinkoff Brokerage',  currency: 'RUB', type: 'investment', color: '#6366f1' },
-  { zen: 'Tinkoff IIS',       name: 'Tinkoff IIS',        currency: 'RUB', type: 'investment', color: '#6366f1' },
-  { zen: 'Trading 212',       name: 'Trading 212',        currency: 'EUR', type: 'investment', color: '#14b8a6' },
-  { zen: 'eToro',             name: 'eToro',              currency: 'USD', type: 'investment', color: '#22c55e' },
+  { zen: 'Tinkoff Brokerage', name: 'Tinkoff Brokerage',  currency: 'RUB', type: 'investment', color: '#512faf' },
+  { zen: 'Tinkoff IIS',       name: 'Tinkoff IIS',        currency: 'RUB', type: 'investment', color: '#512faf' },
+  { zen: 'Trading 212',       name: 'Trading 212',        currency: 'EUR', type: 'investment', color: '#00a7e1' },
+  { zen: 'eToro',             name: 'eToro',              currency: 'USD', type: 'investment', color: '#0eb12e' },
 ]
 
 /** zen display name → account row object */
