@@ -50,7 +50,7 @@ export function FilterBar({ filterState, inline }: Props) {
       {filterState.dateTo && <Chip label={`To ${filterState.dateTo}`} onRemove={removeDateTo} />}
       {filterState.amountMin !== '' && <Chip label={`≥ ${filterState.amountMin}`} onRemove={removeAmountMin} />}
       {filterState.amountMax !== '' && <Chip label={`≤ ${filterState.amountMax}`} onRemove={removeAmountMax} />}
-      <button onClick={clearFilters} className="ml-1 shrink-0 text-xs text-muted-foreground hover:text-foreground underline whitespace-nowrap">
+      <button onClick={clearFilters} className="ml-1 shrink-0 text-sm text-muted-foreground hover:text-foreground underline whitespace-nowrap">
         Clear all
       </button>
     </>
@@ -69,7 +69,7 @@ export function FilterBar({ filterState, inline }: Props) {
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-sm px-2 py-1 rounded-full whitespace-nowrap shrink-0">
       {label}
       <button onClick={onRemove} className="hover:opacity-70">
         <X size={11} />

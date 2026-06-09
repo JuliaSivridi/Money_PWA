@@ -17,33 +17,20 @@ import { usePrefsStore } from '@/store/prefsStore'
 import { todayISO } from '@/utils/dateUtils'
 import type { Category } from '@/types/category'
 
-// ── Income cell (no limit, just amount) ───────────────────────────────────────
+type ActiveTab = 'expenses' | 'income'
 
-function IncomeCell({ earned, currency, active }: { earned: number; currency: string; active: boolean }) {
-  if (!active) return <div className="w-20 shrink-0" />
-  if (earned > 0) {
-    return (
-      <div className="w-20 shrink-0 text-right">
-        <p className="text-xs font-medium text-green-400">{formatAmount(earned, currency)}</p>
-      </div>
-    )
-  }
-  return <div className="w-20 shrink-0" />
-}
+// ── Amount cell ────────────────────────────────────────────────────────────────
 
-// ── Expense cell (with optional limit + progress bar) ─────────────────────────
-
-function ExpenseCell({ spent, limit, currency, active }: {
-  spent: number; limit: number; currency: string; active: boolean
+function AmountCell({ amount, limit, currency, isExpense }: {
+  amount: number; limit: number; currency: string; isExpense: boolean
 }) {
-  if (!active) return <div className="w-20 shrink-0" />
-  if (limit > 0) {
-    const pct = Math.min(spent / limit, 1)
-    const over = spent > limit
+  if (isExpense && limit > 0) {
+    const pct = Math.min(amount / limit, 1)
+    const over = amount > limit
     return (
-      <div className="w-20 shrink-0 text-right">
-        <p className={`text-xs font-medium ${over ? 'text-red-400' : 'text-foreground'}`}>
-          {formatAmount(spent, currency)}
+      <div className="w-24 shrink-0 text-right">
+        <p className={`font-medium ${over ? 'text-red-400' : 'text-foreground'}`}>
+          {formatAmount(amount, currency)}
         </p>
         <div className="mt-0.5 h-1 rounded-full bg-muted overflow-hidden">
           <div
@@ -51,30 +38,33 @@ function ExpenseCell({ spent, limit, currency, active }: {
             style={{ width: `${pct * 100}%` }}
           />
         </div>
-        <p className="text-[10px] text-muted-foreground">{formatAmount(limit, currency)}</p>
+        <p className="text-sm text-muted-foreground">{formatAmount(limit, currency)}</p>
       </div>
     )
   }
-  if (spent > 0) {
+  if (amount > 0) {
     return (
-      <div className="w-20 shrink-0 text-right">
-        <p className="text-xs text-muted-foreground">{formatAmount(spent, currency)}</p>
+      <div className="w-24 shrink-0 text-right">
+        <p className={`font-medium ${isExpense ? 'text-red-400' : 'text-green-400'}`}>
+          {formatAmount(amount, currency)}
+        </p>
       </div>
     )
   }
-  return <div className="w-20 shrink-0" />
+  return <div className="w-24 shrink-0" />
 }
 
 // ── Sortable row ───────────────────────────────────────────────────────────────
 
 function SortableCategory({
-  category, onClick, expenseSpent, incomeEarned, currency,
+  category, onClick, amount, currency, activeTab,
 }: {
   category: Category; onClick: () => void;
-  expenseSpent: number; incomeEarned: number; currency: string
+  amount: number; currency: string; activeTab: ActiveTab
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  const isExpense = activeTab === 'expenses'
 
   return (
     <button
@@ -94,10 +84,14 @@ function SortableCategory({
 
       <CategoryIcon icon={category.icon} color={category.color} size={28} />
 
-      <span className="flex-1 font-medium truncate min-w-0 text-sm">{category.name}</span>
+      <span className="flex-1 font-medium truncate min-w-0">{category.name}</span>
 
-      <IncomeCell earned={incomeEarned} currency={currency} active={category.is_income} />
-      <ExpenseCell spent={expenseSpent} limit={category.expense_limit} currency={currency} active={category.is_expense} />
+      <AmountCell
+        amount={amount}
+        limit={isExpense ? category.expense_limit : 0}
+        currency={currency}
+        isExpense={isExpense}
+      />
     </button>
   )
 }
@@ -110,10 +104,10 @@ export function CategoriesPage() {
   const { baseCurrency } = usePrefsStore()
   const [createOpen, setCreateOpen] = useState(false)
   const [editCategory, setEditCategory] = useState<Category | null>(null)
+  const [activeTab, setActiveTab] = useState<ActiveTab>('expenses')
 
   const currentMonth = todayISO().slice(0, 7)
 
-  // Monthly per-category totals (in base currency)
   const { expenseByCategory, incomeByCategory, totalExpenses, totalIncome } = useMemo(() => {
     const expenseByCategory: Record<string, number> = {}
     const incomeByCategory: Record<string, number> = {}
@@ -134,6 +128,10 @@ export function CategoriesPage() {
     return { expenseByCategory, incomeByCategory, totalExpenses, totalIncome }
   }, [transactions, currentMonth])
 
+  const visibleCategories = categories.filter(c =>
+    activeTab === 'expenses' ? c.is_expense : c.is_income
+  )
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -148,45 +146,55 @@ export function CategoriesPage() {
     await reorder(newOrder.map(c => c.id))
   }
 
+  const totalActive = activeTab === 'expenses' ? totalExpenses : totalIncome
+
   return (
     <div className="flex flex-col h-full">
-      {/* Column headers + monthly totals — aligned above data columns */}
-      {categories.length > 0 && (
-        <div className="flex items-end gap-2 px-3 py-2 border-b bg-muted/20 shrink-0">
-          <div className="w-4 shrink-0" />{/* grip */}
-          <div className="w-10 shrink-0" />{/* icon */}
-          <div className="flex-1" />
-          {/* Income column header */}
-          <div className="w-20 shrink-0 text-right">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Income</p>
-            <p className="text-xs font-bold text-green-400">{formatAmount(totalIncome, baseCurrency)}</p>
-          </div>
-          {/* Expense column header */}
-          <div className="w-20 shrink-0 text-right">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Expenses</p>
-            <p className="text-xs font-bold text-red-400">{formatAmount(totalExpenses, baseCurrency)}</p>
-          </div>
+      {/* Toggle tabs */}
+      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+        <div
+          className="flex rounded-lg p-1 gap-1"
+          style={{ background: 'var(--surface-2, hsl(var(--muted)))' }}
+        >
+          {(['expenses', 'income'] as ActiveTab[]).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                activeTab === tab
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span className="capitalize">{tab}</span>
+              {activeTab === tab && totalActive > 0 && (
+                <span className={`text-sm font-bold ${tab === 'expenses' ? 'text-red-400' : 'text-green-400'}`}>
+                  {formatAmount(totalActive, baseCurrency)}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
-        {categories.length === 0 ? (
+        {visibleCategories.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
             <Tag size={40} className="opacity-20" />
-            <p>No categories yet</p>
+            <p>No {activeTab} categories yet</p>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void handleDragEnd(e)}>
-            <SortableContext items={categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
-              {categories.map(cat => (
+            <SortableContext items={visibleCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+              {visibleCategories.map(cat => (
                 <SortableCategory
                   key={cat.id}
                   category={cat}
                   onClick={() => setEditCategory(cat)}
-                  expenseSpent={expenseByCategory[cat.id] || 0}
-                  incomeEarned={incomeByCategory[cat.id] || 0}
+                  amount={activeTab === 'expenses' ? (expenseByCategory[cat.id] || 0) : (incomeByCategory[cat.id] || 0)}
                   currency={baseCurrency}
+                  activeTab={activeTab}
                 />
               ))}
             </SortableContext>

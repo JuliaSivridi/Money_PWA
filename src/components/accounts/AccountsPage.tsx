@@ -24,7 +24,7 @@ function AccountRow({ account, onClick }: { account: Account; onClick: () => voi
       </div>
       <div className="flex-1">
         <p className="font-medium">{account.name}</p>
-        <p className="text-xs text-muted-foreground">{account.currency}</p>
+        <p className="text-sm text-muted-foreground">{account.currency}</p>
       </div>
       <span className={`font-medium ${account.balance < 0 ? 'text-red-400' : ''}`}>
         {formatAmount(account.balance, account.currency)}
@@ -96,7 +96,7 @@ export function AccountsPage() {
                   <div key={t.id} className="flex items-center gap-3 px-4 py-3 border-b last:border-0">
                     <div className="flex-1">
                       <p>{t.comment || 'Unknown'}</p>
-                      <p className="text-xs text-muted-foreground">{t.type === 'debt_lent' ? 'You lent' : 'You borrowed'}</p>
+                      <p className="text-sm text-muted-foreground">{t.type === 'debt_lent' ? 'You lent' : 'You borrowed'}</p>
                     </div>
                     <span className={t.type === 'debt_lent' ? 'text-red-400' : 'text-green-400'}>
                       {formatAmount(t.amount, t.currency)}

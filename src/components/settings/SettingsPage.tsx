@@ -91,7 +91,7 @@ export function SettingsPage() {
                 className={`w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition-colors flex items-center justify-between gap-2 ${s.id === spreadsheetId ? 'bg-accent/50' : ''}`}
               >
                 <span className="truncate">{s.name}</span>
-                {s.id === spreadsheetId && <span className="text-primary text-xs shrink-0">current</span>}
+                {s.id === spreadsheetId && <span className="text-primary text-sm shrink-0">current</span>}
               </button>
             ))}
           </div>
@@ -108,7 +108,7 @@ export function SettingsPage() {
             {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
-        {savingCurrency && <p className="text-xs text-muted-foreground">Updating exchange rates…</p>}
+        {savingCurrency && <p className="text-sm text-muted-foreground">Updating exchange rates…</p>}
       </div>
     </div>
   )

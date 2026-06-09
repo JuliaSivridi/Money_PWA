@@ -108,7 +108,7 @@ export function FilterPanel({ open, onClose }: Props) {
 
           {/* Type */}
           <section>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Type</p>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Type</p>
             <div className="flex flex-wrap gap-2">
               {TYPE_OPTIONS.map(opt => (
                 <Chip
@@ -124,8 +124,8 @@ export function FilterPanel({ open, onClose }: Props) {
 
           {/* Accounts */}
           <section>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Accounts</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Accounts</p>
+            <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto pr-1">
               {activeAccounts.map(a => (
                 <Chip key={a.id} active={filterState.accountIds.includes(a.id)} onClick={() => toggleAccount(a.id)}>
                   <span className="inline-flex items-center gap-1.5">
@@ -139,7 +139,7 @@ export function FilterPanel({ open, onClose }: Props) {
 
           {/* Categories — internal scroll */}
           <section>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Categories</p>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Categories</p>
             <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
               {categories.map(c => (
                 <Chip key={c.id} active={filterState.categoryIds.includes(c.id)} onClick={() => toggleCategory(c.id)}>
@@ -154,27 +154,27 @@ export function FilterPanel({ open, onClose }: Props) {
 
           {/* Date range */}
           <section>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Date range</p>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Date range</p>
             <div className="flex gap-2 items-center">
               <input
                 type="date"
                 value={filterState.dateFrom}
                 onChange={e => setFilter({ dateFrom: e.target.value })}
-                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background"
+                className="flex-1 text-sm border border-primary rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <span className="text-muted-foreground">–</span>
               <input
                 type="date"
                 value={filterState.dateTo}
                 onChange={e => setFilter({ dateTo: e.target.value })}
-                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background"
+                className="flex-1 text-sm border border-primary rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           </section>
 
           {/* Amount range */}
           <section>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Amount range</p>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Amount range</p>
             <div className="flex gap-2 items-center">
               <input
                 type="number"
@@ -183,9 +183,9 @@ export function FilterPanel({ open, onClose }: Props) {
                 placeholder="Min"
                 value={filterState.amountMin}
                 onChange={e => setFilter({ amountMin: e.target.value })}
-                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background"
+                className="flex-1 min-w-0 text-sm border border-border rounded-lg px-3 py-2 bg-background focus:outline-none focus:border-primary"
               />
-              <span className="text-muted-foreground">–</span>
+              <span className="text-muted-foreground shrink-0">–</span>
               <input
                 type="number"
                 min="0"
@@ -193,7 +193,7 @@ export function FilterPanel({ open, onClose }: Props) {
                 placeholder="Max"
                 value={filterState.amountMax}
                 onChange={e => setFilter({ amountMax: e.target.value })}
-                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background"
+                className="flex-1 min-w-0 text-sm border border-border rounded-lg px-3 py-2 bg-background focus:outline-none focus:border-primary"
               />
             </div>
           </section>

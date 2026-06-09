@@ -271,7 +271,7 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
                     selected ? 'border-primary bg-accent' : 'border-border hover:bg-accent'
                   )}>
                   <CategoryIcon icon={cat.icon} color={cat.color} size={16} />
-                  <span className="text-xs truncate w-full text-center">{cat.name}</span>
+                  <span className="text-sm truncate w-full text-center">{cat.name}</span>
                   {selected && (
                     <span className={cn(
                       'absolute top-1 right-1 w-3.5 h-3.5 rounded-full text-[9px] font-bold flex items-center justify-center',
@@ -345,7 +345,7 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
                 <div className="flex-1">{accountSelect('account_id', 'Account')}</div>
                 <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00`} />
               </div>
-              {(errors.amount || errors.account_id) && <p className="text-destructive text-xs -mt-2">Fill in account and amount</p>}
+              {(errors.amount || errors.account_id) && <p className="text-destructive text-sm -mt-2">Fill in account and amount</p>}
               <Controller name="comment" control={control} render={({ field }) => (
                 <input {...field} className={inputCls} placeholder="Comment" />
               )} />

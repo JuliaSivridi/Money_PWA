@@ -86,7 +86,7 @@ export function AccountModal({ open, editing, onClose }: Props) {
               placeholder="Account name"
             />
           </div>
-          {errors.name && <p className="text-destructive text-xs -mt-2">Required</p>}
+          {errors.name && <p className="text-destructive text-sm -mt-2">Required</p>}
 
           {colorPickerOpen && (
             <Controller name="color" control={control} render={({ field }) => (

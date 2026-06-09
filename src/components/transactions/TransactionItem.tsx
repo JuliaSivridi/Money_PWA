@@ -59,11 +59,11 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
         <p className="truncate">
           {isTransfer
             ? (toAccount?.name ?? '?')
-            : primaryCategory
-              ? (t.comment ? `${primaryCategory.name} · ${t.comment}` : primaryCategory.name)
+            : txnCategories.length > 0
+              ? [txnCategories.map(c => c!.name).join(', '), t.comment].filter(Boolean).join(' · ')
               : (t.comment ?? t.type)}
         </p>
-        <p className="text-xs truncate font-medium">
+        <p className="text-sm truncate font-medium">
           {t.time && t.time !== '00:00' && (
             <span className="text-muted-foreground">{t.time} · </span>
           )}
@@ -79,7 +79,7 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
               <p className="font-medium text-green-400">
                 +{formatAmount(t.to_amount || t.amount, t.to_currency || t.currency)}
               </p>
-              <p className="text-xs text-red-400">
+              <p className="text-sm text-red-400">
                 −{formatAmount(t.amount, t.currency)}
               </p>
             </>

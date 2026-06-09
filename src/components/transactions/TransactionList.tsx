@@ -67,7 +67,7 @@ export function TransactionList() {
       <div className="flex items-center gap-2 px-3 py-2 border-b">
         <button
           onClick={() => setFilterOpen(true)}
-          className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-full border text-xs font-medium transition-colors ${hasFilters ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
+          className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-full border text-sm font-medium transition-colors ${hasFilters ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
         >
           <SlidersHorizontal size={13} />
           Filters
@@ -99,7 +99,7 @@ export function TransactionList() {
             {/* Sentinel — observed by IntersectionObserver */}
             {hasMore && (
               <div ref={sentinelRef} className="py-4 flex justify-center">
-                <span className="text-xs text-muted-foreground">Loading…</span>
+                <span className="text-sm text-muted-foreground">Loading…</span>
               </div>
             )}
           </>

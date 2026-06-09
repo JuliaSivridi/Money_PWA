@@ -52,7 +52,7 @@ export function CategoryDonut({ month }: Props) {
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center flex-col">
           <span className="text-lg font-bold">{formatAmount(total, baseCurrency)}</span>
-          <span className="text-xs text-muted-foreground">expenses</span>
+          <span className="text-sm text-muted-foreground">expenses</span>
         </div>
       </div>
 
@@ -67,7 +67,7 @@ export function CategoryDonut({ month }: Props) {
                 <span className="flex-1 text-sm">{item.name}</span>
                 <span className="text-sm font-medium">{formatAmount(item.amount, baseCurrency)}</span>
                 {item.limit > 0 && (
-                  <span className={`text-xs ${exceeded ? 'text-red-400' : 'text-green-400'}`}>
+                  <span className={`text-sm ${exceeded ? 'text-red-400' : 'text-green-400'}`}>
                     {exceeded ? '✗' : '✓'} {formatAmount(item.limit, baseCurrency)}
                   </span>
                 )}

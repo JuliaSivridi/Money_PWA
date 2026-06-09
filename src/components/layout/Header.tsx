@@ -99,7 +99,7 @@ export function Header() {
                   <DropdownMenuContent align="end" className="w-48">
                     <div className="px-2 py-1.5 border-b">
                       <p className="text-sm font-medium truncate">{user.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                     </div>
                     <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                       <Settings size={14} className="mr-2" /> Settings
