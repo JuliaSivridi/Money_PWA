@@ -118,8 +118,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
             )}
 
             <div>
-              <Label>Name</Label>
-              <input {...register('name')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="Category name" />
+              <input {...register('name')} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="Category name" />
             </div>
 
             <div className="flex items-center gap-2">
