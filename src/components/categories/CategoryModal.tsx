@@ -122,33 +122,33 @@ export function CategoryModal({ open, editing, onClose }: Props) {
               <input {...register('name')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="Category name" />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Controller name="is_expense" control={control} render={({ field }) => (
-                  <input type="checkbox" checked={field.value} onChange={field.onChange} id="is_expense" className="w-4 h-4" />
-                )} />
-                <Label htmlFor="is_expense">Expense</Label>
-              </div>
+            <div className="flex items-center gap-2">
+              <Controller name="is_expense" control={control} render={({ field }) => (
+                <input type="checkbox" checked={field.value} onChange={field.onChange} id="is_expense" className="w-4 h-4 flex-shrink-0" />
+              )} />
+              <Label htmlFor="is_expense" className="flex-1">Expense</Label>
               {watchExpense && (
-                <div>
-                  <Label>Monthly limit (0 = none)</Label>
-                  <input {...register('expense_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="0" />
-                </div>
+                <>
+                  <span className="text-sm text-muted-foreground">Monthly</span>
+                  <input {...register('expense_limit')} type="number" min="0"
+                    className="w-20 px-2 py-1 border border-input rounded-md bg-background text-sm text-right focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    placeholder="0" />
+                </>
               )}
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Controller name="is_income" control={control} render={({ field }) => (
-                  <input type="checkbox" checked={field.value} onChange={field.onChange} id="is_income" className="w-4 h-4" />
-                )} />
-                <Label htmlFor="is_income">Income</Label>
-              </div>
+            <div className="flex items-center gap-2">
+              <Controller name="is_income" control={control} render={({ field }) => (
+                <input type="checkbox" checked={field.value} onChange={field.onChange} id="is_income" className="w-4 h-4 flex-shrink-0" />
+              )} />
+              <Label htmlFor="is_income" className="flex-1">Income</Label>
               {watchIncome && (
-                <div>
-                  <Label>Monthly limit (0 = none)</Label>
-                  <input {...register('income_limit')} type="number" min="0" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="0" />
-                </div>
+                <>
+                  <span className="text-sm text-muted-foreground">Monthly</span>
+                  <input {...register('income_limit')} type="number" min="0"
+                    className="w-20 px-2 py-1 border border-input rounded-md bg-background text-sm text-right focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    placeholder="0" />
+                </>
               )}
             </div>
           </div>
