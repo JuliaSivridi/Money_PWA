@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Wallet, SlidersHorizontal, Search, X } from 'lucide-react'
+import { Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FAB } from '@/components/common/FAB'
 import { FilterPanel } from '@/components/common/FilterPanel'
@@ -14,14 +14,13 @@ import type { Transaction } from '@/types/transaction'
 const PAGE_SIZE = 20
 
 export function TransactionList() {
-  const { filterState, searchQuery, setSearchQuery } = useUIStore()
+  const { filterState, filterPanelOpen, setFilterPanelOpen, searchQuery } = useUIStore()
   const allGroups = useTransactionsByDate()
   const filtered = useFilteredTransactions(filterState, searchQuery)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editTx, setEditTx] = useState<Transaction | null>(null)
   const [copyTx, setCopyTx] = useState<Transaction | null>(null)
-  const [filterOpen, setFilterOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -66,33 +65,6 @@ export function TransactionList() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search + filter button */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b">
-        {/* Search field */}
-        <div className="flex-1 relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <input
-            type="search"
-            placeholder="Search by comment…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-8 py-1.5 text-sm rounded-full border border-border bg-background focus:outline-none focus:border-primary"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-              <X size={13} />
-            </button>
-          )}
-        </div>
-        {/* Filters button */}
-        <button
-          onClick={() => setFilterOpen(true)}
-          className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-full border text-sm font-medium transition-colors ${hasFilters ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
-        >
-          <SlidersHorizontal size={13} />
-          Filters
-        </button>
-      </div>
       {/* Active filter chips */}
       {hasFilters && (
         <div className="px-3 py-1.5 border-b">
@@ -144,7 +116,7 @@ export function TransactionList() {
         copyFrom={copyTx}
         onClose={() => setCopyTx(null)}
       />
-      <FilterPanel open={filterOpen} onClose={() => setFilterOpen(false)} />
+      <FilterPanel open={filterPanelOpen} onClose={() => setFilterPanelOpen(false)} />
     </div>
   )
 }

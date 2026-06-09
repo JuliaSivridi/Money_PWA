@@ -13,19 +13,30 @@ export interface FilterState {
   amountMax: string
 }
 
+export interface PeriodState {
+  from: string
+  to: string
+}
+
 interface UIState {
   selectedView: SelectedView
   settingsOpen: boolean
   sidebarOpen: boolean
   filterState: FilterState
+  filterPanelOpen: boolean
   searchQuery: string
+  categoriesPeriod: PeriodState
+  categoriesFilterOpen: boolean
   analyticsMonth: string
   setView: (view: SelectedView) => void
   setSettingsOpen: (v: boolean) => void
   setSidebarOpen: (v: boolean) => void
   setFilter: (patch: Partial<FilterState>) => void
   clearFilters: () => void
+  setFilterPanelOpen: (v: boolean) => void
   setSearchQuery: (q: string) => void
+  setCategoriesPeriod: (p: PeriodState) => void
+  setCategoriesFilterOpen: (v: boolean) => void
   setAnalyticsMonth: (month: string) => void
 }
 
@@ -44,13 +55,19 @@ export const useUIStore = create<UIState>((set) => ({
   settingsOpen: false,
   sidebarOpen: false,
   filterState: emptyFilter,
+  filterPanelOpen: false,
   searchQuery: '',
+  categoriesPeriod: { from: '', to: '' },
+  categoriesFilterOpen: false,
   analyticsMonth: currentMonthISO(),
   setView: (view) => set({ selectedView: view, sidebarOpen: false }),
   setSettingsOpen: (v) => set({ settingsOpen: v }),
   setSidebarOpen: (v) => set({ sidebarOpen: v }),
   setFilter: (patch) => set((s) => ({ filterState: { ...s.filterState, ...patch } })),
   clearFilters: () => set({ filterState: emptyFilter }),
+  setFilterPanelOpen: (v) => set({ filterPanelOpen: v }),
   setSearchQuery: (q) => set({ searchQuery: q }),
+  setCategoriesPeriod: (p) => set({ categoriesPeriod: p }),
+  setCategoriesFilterOpen: (v) => set({ categoriesFilterOpen: v }),
   setAnalyticsMonth: (month) => set({ analyticsMonth: month }),
 }))
