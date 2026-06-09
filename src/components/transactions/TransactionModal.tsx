@@ -17,8 +17,8 @@ import { todayISO } from '@/utils/dateUtils'
 import { cn } from '@/lib/utils'
 import type { Transaction, TransactionType } from '@/types/transaction'
 
-const getLastAccountId = () => localStorage.getItem('lastAccountId') ?? ''
-const saveLastAccountId = (id: string) => { if (id) localStorage.setItem('lastAccountId', id) }
+const getLastAccountId = () => localStorage.getItem('money-lastAccountId') ?? ''
+const saveLastAccountId = (id: string) => { if (id) localStorage.setItem('money-lastAccountId', id) }
 
 function isoToDisplay(iso: string) {
   if (!iso || iso.length < 10) return ''
