@@ -44,7 +44,8 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     if (delta === 0) return
     const existing = get().accounts.find(a => a.id === id)
     if (!existing) return
-    const updated: Account = { ...existing, balance: existing.balance + delta, updated_at: now() }
+    const newBalance = Math.round((existing.balance + delta) * 100) / 100
+    const updated: Account = { ...existing, balance: newBalance, updated_at: now() }
     await db.accounts.where('id').equals(id).modify({ balance: updated.balance, updated_at: updated.updated_at })
     await enqueue('account', 'update', id, updated as unknown as Record<string, unknown>)
     set((s) => ({ accounts: s.accounts.map(a => a.id === id ? updated : a) }))

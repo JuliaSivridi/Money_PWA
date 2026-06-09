@@ -33,7 +33,7 @@ function SortableCategory({ category, onClick }: { category: Category; onClick: 
         <GripVertical size={16} />
       </span>
 
-      <CategoryIcon icon={category.icon} color={category.color} />
+      <CategoryIcon icon={category.icon} color={category.color} size={28} />
 
       <div className="flex-1 flex items-center gap-2 min-w-0">
         <span className="font-medium truncate">{category.name}</span>

@@ -216,8 +216,12 @@ for (const line of rawLines) {
   seq++
   const id = makeId('txn', `${date}-${seq}`)
 
-  // amount_base: EUR = 1:1, others = 0 (no historical rate data)
-  const amountBase = (amt, cur) => cur === 'EUR' ? String(amt) : '0'
+  // amount_base: EUR = 1:1, RUB = 1/88 EUR (avg 5yr rate), others = 0
+  const amountBase = (amt, cur) => {
+    if (cur === 'EUR') return String(amt)
+    if (cur === 'RUB') return String(Math.round(amt / 88 * 100) / 100)
+    return '0'
+  }
 
   if (outImported && inImported) {
     // ── Transfer between two imported accounts ──

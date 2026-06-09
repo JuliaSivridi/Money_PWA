@@ -91,11 +91,8 @@ export function TransactionList() {
           <>
             {displayGroups.map(group => (
               <div key={group.date}>
-                <div className="flex items-center justify-between px-4 py-2 bg-muted/40 border-b">
-                  <span className="text-xs text-muted-foreground font-medium">{group.label}</span>
-                  <span className={`text-xs font-medium ${group.dailyNet >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {group.dailyNet >= 0 ? '+' : ''}{formatAmount(group.dailyNet, baseCurrency)}
-                  </span>
+                <div className="px-4 pt-4 pb-1">
+                  <span className="text-sm font-bold">{group.label}</span>
                 </div>
                 {group.transactions.map(t => (
                   <TransactionItem key={t.id} transaction={t} onClick={() => setEditTx(t)} />

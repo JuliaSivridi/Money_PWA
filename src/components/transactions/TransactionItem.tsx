@@ -29,33 +29,39 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 w-full px-4 py-3 hover:bg-accent transition-colors text-left"
+      className="flex items-start gap-3 w-full px-4 py-3 hover:bg-accent transition-colors text-left"
     >
       {/* Icon(s) */}
       {isTransfer ? (
-        <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-          <Redo2 className="w-4 h-4 text-muted-foreground" />
+        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Redo2 className="w-5 h-5 text-muted-foreground" />
         </div>
       ) : txnCategories.length > 1 ? (
         // Stacked icons — second slightly offset behind first
-        <div className="relative flex-shrink-0 w-7 h-7">
-          <div className="absolute top-0 left-0 translate-x-2 translate-y-1 opacity-70">
-            <CategoryIcon icon={txnCategories[1]!.icon} color={txnCategories[1]!.color} size={20} />
+        <div className="relative flex-shrink-0 w-10 h-10 mt-0.5">
+          <div className="absolute top-0 left-0 translate-x-2.5 translate-y-1.5 opacity-70">
+            <CategoryIcon icon={txnCategories[1]!.icon} color={txnCategories[1]!.color} size={28} />
           </div>
           <div className="absolute top-0 left-0">
-            <CategoryIcon icon={txnCategories[0]!.icon} color={txnCategories[0]!.color} size={24} />
+            <CategoryIcon icon={txnCategories[0]!.icon} color={txnCategories[0]!.color} size={32} />
           </div>
         </div>
       ) : primaryCategory ? (
-        <CategoryIcon icon={primaryCategory.icon} color={primaryCategory.color} />
+        <div className="flex-shrink-0 mt-0.5">
+          <CategoryIcon icon={primaryCategory.icon} color={primaryCategory.color} size={36} />
+        </div>
       ) : (
-        <div className="w-7 h-7 rounded-full bg-muted flex-shrink-0" />
+        <div className="w-10 h-10 rounded-full bg-muted flex-shrink-0 mt-0.5" />
       )}
 
       {/* Name + account lines */}
       <div className="flex-1 min-w-0">
         <p className="truncate">
-          {isTransfer ? (toAccount?.name ?? '?') : (primaryCategory?.name ?? t.comment ?? t.type)}
+          {isTransfer
+            ? (toAccount?.name ?? '?')
+            : primaryCategory
+              ? (t.comment ? `${primaryCategory.name} · ${t.comment}` : primaryCategory.name)
+              : (t.comment ?? t.type)}
         </p>
         <p className="text-xs truncate font-medium"
           style={{ color: account?.color || '#6b7280' }}>
