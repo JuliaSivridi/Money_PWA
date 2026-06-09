@@ -106,13 +106,20 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
 
   upsertMany: async (incoming) => {
     const existing = await db.transactions.toArray()
+    const incomingIds = new Set(incoming.map(t => t.id))
     const existingMap = new Map(existing.map(t => [t.id, t]))
-    const toStore: Transaction[] = []
-    for (const item of incoming) {
+
+    // Delete records that exist locally but are gone from Sheets
+    const toDelete = existing.filter(t => !incomingIds.has(t.id)).map(t => t.id)
+    if (toDelete.length > 0) await db.transactions.bulkDelete(toDelete)
+
+    // Upsert records that are new or updated
+    const toStore = incoming.filter(item => {
       const local = existingMap.get(item.id)
-      if (!local || item.updated_at > local.updated_at) toStore.push(item)
-    }
+      return !local || item.updated_at > local.updated_at
+    })
     if (toStore.length > 0) await db.transactions.bulkPut(toStore)
+
     const all = await db.transactions.toArray()
     set({ transactions: all.sort((a, b) => b.date.localeCompare(a.date)) })
   },

@@ -52,13 +52,18 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
 
   upsertMany: async (incoming) => {
     const existing = await db.accounts.toArray()
+    const incomingIds = new Set(incoming.map(a => a.id))
     const existingMap = new Map(existing.map(a => [a.id, a]))
-    const toStore: Account[] = []
-    for (const item of incoming) {
+
+    const toDelete = existing.filter(a => !incomingIds.has(a.id)).map(a => a.id)
+    if (toDelete.length > 0) await db.accounts.bulkDelete(toDelete)
+
+    const toStore = incoming.filter(item => {
       const local = existingMap.get(item.id)
-      if (!local || item.updated_at > local.updated_at) toStore.push(item)
-    }
+      return !local || item.updated_at > local.updated_at
+    })
     if (toStore.length > 0) await db.accounts.bulkPut(toStore)
+
     const all = await db.accounts.toArray()
     set({ accounts: all.sort((a, b) => a.sort_order - b.sort_order) })
   },

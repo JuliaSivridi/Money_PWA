@@ -15,9 +15,11 @@ const TYPE_CONFIG: Record<AccountType, { label: string; Icon: React.FC<{ size?: 
 
 function AccountRow({ account, onClick }: { account: Account; onClick: () => void }) {
   const { Icon } = TYPE_CONFIG[account.type]
+  const color = account.color || '#6b7280'
   return (
     <button onClick={onClick} className="flex items-center gap-3 w-full px-4 py-3 hover:bg-accent transition-colors text-left">
-      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: color + '33', color }}>
         <Icon size={16} />
       </div>
       <div className="flex-1">

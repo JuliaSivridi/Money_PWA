@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ColorPicker } from '@/components/common/ColorPicker'
 import { useAccountsStore } from '@/store/accountsStore'
 import type { Account } from '@/types/account'
 
@@ -13,6 +14,7 @@ const schema = z.object({
   name: z.string().min(1),
   currency: z.string(),
   type: z.enum(['card', 'cash', 'savings', 'investment']),
+  color: z.string(),
   opening_balance: z.string(),
   archived: z.boolean(),
 })
@@ -26,30 +28,35 @@ interface Props {
 
 export function AccountModal({ open, editing, onClose }: Props) {
   const { addAccount, updateAccount, archiveAccount } = useAccountsStore()
+  const [colorPickerOpen, setColorPickerOpen] = useState(false)
 
-  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, control, reset, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', currency: 'EUR', type: 'cash', opening_balance: '0', archived: false },
+    defaultValues: { name: '', currency: 'EUR', type: 'cash', color: '#6b7280', opening_balance: '0', archived: false },
   })
 
   useEffect(() => {
     if (!open) return
+    setColorPickerOpen(false)
     if (editing) {
-      reset({ name: editing.name, currency: editing.currency, type: editing.type, opening_balance: String(editing.balance), archived: editing.archived })
+      reset({ name: editing.name, currency: editing.currency, type: editing.type, color: editing.color || '#6b7280', opening_balance: String(editing.balance), archived: editing.archived })
     } else {
-      reset({ name: '', currency: 'EUR', type: 'cash', opening_balance: '0', archived: false })
+      reset({ name: '', currency: 'EUR', type: 'cash', color: '#6b7280', opening_balance: '0', archived: false })
     }
   }, [open, editing, reset])
 
+  const watchColor = watch('color')
+
   const onSubmit = async (values: FormValues) => {
     if (editing) {
-      await updateAccount(editing.id, { name: values.name, currency: values.currency, type: values.type })
+      await updateAccount(editing.id, { name: values.name, currency: values.currency, type: values.type, color: values.color })
       if (values.archived && !editing.archived) await archiveAccount(editing.id)
     } else {
       await addAccount({
         name: values.name,
         currency: values.currency,
         type: values.type,
+        color: values.color,
         balance: parseFloat(values.opening_balance) || 0,
         archived: false,
         sort_order: 0,
@@ -66,12 +73,26 @@ export function AccountModal({ open, editing, onClose }: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div>
-            <Label>Name</Label>
-            <input {...register('name')} className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="Account name" />
-            {errors.name && <p className="text-destructive text-xs mt-1">Required</p>}
+          <div className="flex items-center gap-3">
+            {/* Color swatch — tap to open picker */}
+            <button type="button" onClick={() => setColorPickerOpen(p => !p)}
+              className="w-9 h-9 rounded-full border-2 border-border flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-ring"
+              style={{ backgroundColor: watchColor }}
+            />
+            <input
+              {...register('name')}
+              autoFocus
+              className="flex-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+              placeholder="Account name"
+            />
           </div>
+          {errors.name && <p className="text-destructive text-xs -mt-2">Required</p>}
 
+          {colorPickerOpen && (
+            <Controller name="color" control={control} render={({ field }) => (
+              <ColorPicker value={field.value} onChange={v => { field.onChange(v); setColorPickerOpen(false) }} />
+            )} />
+          )}
           <div>
             <Label>Currency</Label>
             <Controller name="currency" control={control} render={({ field }) => (

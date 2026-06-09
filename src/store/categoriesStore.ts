@@ -69,13 +69,18 @@ export const useCategoriesStore = create<CategoriesState>((set, get) => ({
 
   upsertMany: async (incoming) => {
     const existing = await db.categories.toArray()
+    const incomingIds = new Set(incoming.map(c => c.id))
     const existingMap = new Map(existing.map(c => [c.id, c]))
-    const toStore: Category[] = []
-    for (const item of incoming) {
+
+    const toDelete = existing.filter(c => !incomingIds.has(c.id)).map(c => c.id)
+    if (toDelete.length > 0) await db.categories.bulkDelete(toDelete)
+
+    const toStore = incoming.filter(item => {
       const local = existingMap.get(item.id)
-      if (!local || item.updated_at > local.updated_at) toStore.push(item)
-    }
+      return !local || item.updated_at > local.updated_at
+    })
     if (toStore.length > 0) await db.categories.bulkPut(toStore)
+
     const all = await db.categories.toArray()
     set({ categories: all.sort((a, b) => a.sort_order - b.sort_order) })
   },

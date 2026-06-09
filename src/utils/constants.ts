@@ -31,6 +31,7 @@ export const ACCOUNT_COLS = {
   SORT_ORDER: 6,
   CREATED_AT: 7,
   UPDATED_AT: 8,
+  COLOR: 9,
 } as const
 
 export const CATEGORY_COLS = {
@@ -48,7 +49,7 @@ export const CATEGORY_COLS = {
 } as const
 
 export const TRANSACTION_RANGE = `${SHEET_TRANSACTIONS}!A:O`
-export const ACCOUNT_RANGE = `${SHEET_ACCOUNTS}!A:I`
+export const ACCOUNT_RANGE = `${SHEET_ACCOUNTS}!A:J`
 export const CATEGORY_RANGE = `${SHEET_CATEGORIES}!A:K`
 
 export const SPREADSHEET_TITLE = 'db_money'

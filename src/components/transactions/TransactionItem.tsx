@@ -57,7 +57,8 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
         <p className="truncate">
           {isTransfer ? (toAccount?.name ?? '?') : (primaryCategory?.name ?? t.comment ?? t.type)}
         </p>
-        <p className="text-muted-foreground text-xs truncate">
+        <p className="text-xs truncate font-medium"
+          style={{ color: account?.color || '#6b7280' }}>
           {account?.name ?? ''}
         </p>
       </div>

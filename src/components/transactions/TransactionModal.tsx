@@ -287,8 +287,29 @@ export function TransactionModal({ open, editing, onClose }: Props) {
   const accountSelect = (name: 'account_id' | 'to_account_id', placeholder: string) => (
     <Controller name={name} control={control} render={({ field }) => (
       <Select value={field.value} onValueChange={field.onChange}>
-        <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
-        <SelectContent>{activeAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
+        <SelectTrigger>
+          <SelectValue placeholder={placeholder}>
+            {field.value && (() => {
+              const acc = activeAccounts.find(a => a.id === field.value)
+              return acc ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: acc.color || '#6b7280' }} />
+                  {acc.name}
+                </span>
+              ) : null
+            })()}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {activeAccounts.map(a => (
+            <SelectItem key={a.id} value={a.id}>
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: a.color || '#6b7280' }} />
+                {a.name}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     )} />
   )

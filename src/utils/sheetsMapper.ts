@@ -57,6 +57,7 @@ export function rowToAccount(row: string[]): Account {
     name:       cell(row, ACCOUNT_COLS.NAME),
     currency:   cell(row, ACCOUNT_COLS.CURRENCY) || 'EUR',
     type:       (cell(row, ACCOUNT_COLS.TYPE) || 'cash') as AccountType,
+    color:      cell(row, ACCOUNT_COLS.COLOR) || '#6b7280',
     balance:    Number(cell(row, ACCOUNT_COLS.BALANCE)) || 0,
     archived:   cell(row, ACCOUNT_COLS.ARCHIVED) === 'TRUE',
     sort_order: Number(cell(row, ACCOUNT_COLS.SORT_ORDER)) || 0,
@@ -66,7 +67,7 @@ export function rowToAccount(row: string[]): Account {
 }
 
 export function accountToRow(a: Account): string[] {
-  const row = new Array(9).fill('')
+  const row = new Array(10).fill('')
   row[ACCOUNT_COLS.ID]         = a.id
   row[ACCOUNT_COLS.NAME]       = a.name
   row[ACCOUNT_COLS.CURRENCY]   = a.currency
@@ -76,6 +77,7 @@ export function accountToRow(a: Account): string[] {
   row[ACCOUNT_COLS.SORT_ORDER] = String(a.sort_order)
   row[ACCOUNT_COLS.CREATED_AT] = a.created_at
   row[ACCOUNT_COLS.UPDATED_AT] = a.updated_at
+  row[ACCOUNT_COLS.COLOR]      = a.color || '#6b7280'
   return row
 }
 

@@ -6,6 +6,7 @@ export interface Account {
   name: string
   currency: string
   type: AccountType
+  color: string
   balance: number
   archived: boolean
   sort_order: number
