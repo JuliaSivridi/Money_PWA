@@ -1,5 +1,10 @@
 import { X } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
+
+function isoToDot(iso: string): string {
+  if (!iso || iso.length < 10) return iso
+  return `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`
+}
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
 import type { FilterState } from '@/store/uiStore'
@@ -46,8 +51,8 @@ export function FilterBar({ filterState, inline }: Props) {
         const cat = categories.find(c => c.id === id)
         return cat ? <Chip key={id} label={cat.name} onRemove={() => removeCategory(id)} /> : null
       })}
-      {filterState.dateFrom && <Chip label={`From ${filterState.dateFrom}`} onRemove={removeDateFrom} />}
-      {filterState.dateTo && <Chip label={`To ${filterState.dateTo}`} onRemove={removeDateTo} />}
+      {filterState.dateFrom && <Chip label={`From ${isoToDot(filterState.dateFrom)}`} onRemove={removeDateFrom} />}
+      {filterState.dateTo && <Chip label={`To ${isoToDot(filterState.dateTo)}`} onRemove={removeDateTo} />}
       {filterState.amountMin !== '' && <Chip label={`≥ ${filterState.amountMin}`} onRemove={removeAmountMin} />}
       {filterState.amountMax !== '' && <Chip label={`≤ ${filterState.amountMax}`} onRemove={removeAmountMax} />}
       <button onClick={clearFilters} className="ml-1 shrink-0 text-sm text-muted-foreground hover:text-foreground underline whitespace-nowrap">

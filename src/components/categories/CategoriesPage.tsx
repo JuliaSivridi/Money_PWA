@@ -73,7 +73,7 @@ function SortableCategory({
 
       {/* Full-width progress bar — only when limit is set */}
       {hasLimit && (
-        <div className="h-1 w-full rounded-full bg-muted overflow-hidden ml-1">
+        <div className="h-1 w-full rounded-full bg-muted overflow-hidden mt-1">
           <div
             className={`h-full rounded-full transition-all ${over ? 'bg-red-400' : 'bg-green-400'}`}
             style={{ width: `${pct * 100}%` }}

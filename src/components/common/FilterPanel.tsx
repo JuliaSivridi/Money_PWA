@@ -2,14 +2,54 @@ import { CategoryIcon } from './CategoryIcon'
 import { useUIStore } from '@/store/uiStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
+
+/** Format local Date as YYYY-MM-DD without timezone shift */
+function localISO(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** Always returns first and last day of a month (0 = current, -1 = previous) */
 function getMonthRange(offset: 0 | -1): { from: string; to: string } {
   const now = new Date()
   const year = now.getFullYear()
-  const month = now.getMonth() + offset
-  const from = new Date(year, month, 1)
-  const to = new Date(year, month + 1, 0)
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
-  return { from: fmt(from), to: fmt(to) }
+  const month = now.getMonth() + offset   // JS handles month=-1 correctly (Dec of prev year)
+  return {
+    from: localISO(new Date(year, month, 1)),
+    to:   localISO(new Date(year, month + 1, 0)),  // day 0 = last day of `month`
+  }
+}
+
+/** Display YYYY-MM-DD as DD.MM.YYYY; empty → placeholder */
+function isoToDot(iso: string): string {
+  if (!iso || iso.length < 10) return ''
+  return `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`
+}
+
+/** Date picker: DD.MM.YYYY display over a hidden native date input */
+function DatePicker({ value, onChange, placeholder = 'DD.MM.YYYY' }: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  return (
+    <div className="relative flex-1">
+      <div className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background pointer-events-none min-h-[38px] flex items-center">
+        {value
+          ? <span>{isoToDot(value)}</span>
+          : <span className="text-muted-foreground">{placeholder}</span>
+        }
+      </div>
+      <input
+        type="date"
+        value={value}
+        onChange={e => { if (e.target.value) onChange(e.target.value) }}
+        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+      />
+    </div>
+  )
 }
 
 interface Props {
@@ -89,10 +129,7 @@ export function FilterPanel({ open, onClose }: Props) {
     <>
       {/* Backdrop */}
       {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
       )}
 
       {/* Bottom sheet */}
@@ -141,7 +178,7 @@ export function FilterPanel({ open, onClose }: Props) {
             </div>
           </section>
 
-          {/* Categories — internal scroll */}
+          {/* Categories */}
           <section>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Categories</p>
             <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
@@ -160,18 +197,16 @@ export function FilterPanel({ open, onClose }: Props) {
           <section>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Date range</p>
             <div className="flex gap-2 items-center mb-2">
-              <input
-                type="date"
+              <DatePicker
                 value={filterState.dateFrom}
-                onChange={e => setFilter({ dateFrom: e.target.value })}
-                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                onChange={v => setFilter({ dateFrom: v })}
+                placeholder="DD.MM.YYYY"
               />
-              <span className="text-muted-foreground">–</span>
-              <input
-                type="date"
+              <span className="text-muted-foreground shrink-0">–</span>
+              <DatePicker
                 value={filterState.dateTo}
-                onChange={e => setFilter({ dateTo: e.target.value })}
-                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                onChange={v => setFilter({ dateTo: v })}
+                placeholder="DD.MM.YYYY"
               />
             </div>
             {/* Quick presets */}
