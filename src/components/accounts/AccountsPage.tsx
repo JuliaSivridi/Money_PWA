@@ -78,7 +78,7 @@ export function AccountsPage() {
           </div>
         ) : (
           <>
-            {(['card', 'cash', 'savings', 'investment'] as AccountType[]).map(type => (
+            {(['cash', 'card', 'savings', 'investment'] as AccountType[]).map(type => (
               <Section
                 key={type}
                 title={TYPE_CONFIG[type].label}
