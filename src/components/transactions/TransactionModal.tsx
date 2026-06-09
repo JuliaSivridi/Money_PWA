@@ -49,7 +49,7 @@ function AmountField({ value, active, onActivate, placeholder }: {
       tabIndex={0}
       onClick={onActivate}
       className={cn(
-        'w-full px-3 py-2 border rounded-md bg-background text-foreground cursor-pointer select-none',
+        'w-28 shrink-0 px-3 py-2 border rounded-md bg-background text-foreground cursor-pointer select-none text-right',
         active ? 'border-ring ring-2 ring-ring' : 'border-input',
         !value && 'text-muted-foreground',
       )}
@@ -280,52 +280,63 @@ export function TransactionModal({ open, editing, onClose }: Props) {
             </TabsList>
 
             {/* ── EXPENSE ── */}
-            <TabsContent value="expense" className="space-y-3 mt-4">
-              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
-              {errors.amount && <p className="text-destructive text-xs -mt-2">Required</p>}
-              {categoryGrid(sortedExpense)}
-              {accountSelect('account_id', 'Account')}
-              {errors.account_id && <p className="text-destructive text-xs -mt-2">Required</p>}
+            <TabsContent value="expense" className="space-y-3 mt-3">
               <Controller name="date" control={control} render={({ field }) => (
                 <DateInput value={field.value} onChange={field.onChange} />
               )} />
+              {categoryGrid(sortedExpense)}
+              <div className="flex gap-2 items-center">
+                <div className="flex-1">{accountSelect('account_id', 'Account')}</div>
+                <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00`} />
+              </div>
+              {(errors.amount || errors.account_id) && <p className="text-destructive text-xs -mt-2">Fill in account and amount</p>}
               <Controller name="comment" control={control} render={({ field }) => (
                 <input {...field} className={inputCls} placeholder="Comment" />
               )} />
             </TabsContent>
 
             {/* ── INCOME ── */}
-            <TabsContent value="income" className="space-y-3 mt-4">
-              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
-              {errors.amount && <p className="text-destructive text-xs -mt-2">Required</p>}
-              {categoryGrid(sortedIncome)}
-              {accountSelect('account_id', 'Account')}
+            <TabsContent value="income" className="space-y-3 mt-3">
               <Controller name="date" control={control} render={({ field }) => (
                 <DateInput value={field.value} onChange={field.onChange} />
               )} />
+              {categoryGrid(sortedIncome)}
+              <div className="flex gap-2 items-center">
+                <div className="flex-1">{accountSelect('account_id', 'Account')}</div>
+                <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00`} />
+              </div>
               <Controller name="comment" control={control} render={({ field }) => (
                 <input {...field} className={inputCls} placeholder="Comment" />
               )} />
             </TabsContent>
 
             {/* ── TRANSFER ── */}
-            <TabsContent value="transfer" className="space-y-3 mt-4">
-              {accountSelect('account_id', 'From account')}
-              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
-              {accountSelect('to_account_id', 'To account')}
-              {crossCurrency && (
-                <AmountField value={watchToAmount} active={activeField === 'to_amount'} onActivate={() => setActiveField('to_amount')} placeholder={`Received (${watchToCurrency})`} />
-              )}
+            <TabsContent value="transfer" className="space-y-3 mt-3">
               <Controller name="date" control={control} render={({ field }) => (
                 <DateInput value={field.value} onChange={field.onChange} />
               )} />
+              <div className="flex gap-2 items-center">
+                <div className="flex-1">{accountSelect('account_id', 'From account')}</div>
+                <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder="0.00" />
+              </div>
+              {crossCurrency ? (
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1">{accountSelect('to_account_id', 'To account')}</div>
+                  <AmountField value={watchToAmount} active={activeField === 'to_amount'} onActivate={() => setActiveField('to_amount')} placeholder={watchToCurrency} />
+                </div>
+              ) : (
+                accountSelect('to_account_id', 'To account')
+              )}
               <Controller name="comment" control={control} render={({ field }) => (
                 <input {...field} className={inputCls} placeholder="Comment" />
               )} />
             </TabsContent>
 
             {/* ── DEBT ── */}
-            <TabsContent value="debt" className="space-y-3 mt-4">
+            <TabsContent value="debt" className="space-y-3 mt-3">
+              <Controller name="date" control={control} render={({ field }) => (
+                <DateInput value={field.value} onChange={field.onChange} />
+              )} />
               <Controller name="debt_subtype" control={control} render={({ field }) => (
                 <div className="flex gap-2">
                   {(['lent', 'borrowed'] as const).map(v => (
@@ -336,11 +347,10 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                   ))}
                 </div>
               )} />
-              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
-              {accountSelect('account_id', 'Account')}
-              <Controller name="date" control={control} render={({ field }) => (
-                <DateInput value={field.value} onChange={field.onChange} />
-              )} />
+              <div className="flex gap-2 items-center">
+                <div className="flex-1">{accountSelect('account_id', 'Account')}</div>
+                <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder="0.00" />
+              </div>
               <Controller name="comment" control={control} render={({ field }) => (
                 <input {...field} className={inputCls} placeholder="Person's name" />
               )} />
