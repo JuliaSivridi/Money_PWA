@@ -1,4 +1,10 @@
 id,date,type,amount,currency,amount_base,account_id,category_ids,to_account_id,to_amount,to_currency,debt_ref_id,comment,created_at,updated_at
+txn_cb6a689cbce8,2021-12-31,income,100.74,EUR,100.74,acc_6095ddfb9f0d,,,0,,,Opening balance correction,2021-12-31T23:59:59.000Z,2021-12-31T23:59:59.000Z
+txn_a4c7ca7e0b25,2021-12-31,income,0.01,EUR,0.01,acc_53cbdd5e80a9,,,0,,,Opening balance correction,2021-12-31T23:59:59.000Z,2021-12-31T23:59:59.000Z
+txn_3f54e3b5b415,2021-12-31,income,19531.00,RUB,0,acc_0af0a27c37f0,,,0,,,Opening balance correction,2021-12-31T23:59:59.000Z,2021-12-31T23:59:59.000Z
+txn_81c76b4d127f,2021-12-31,income,7190.73,RUB,0,acc_1865128d98f4,,,0,,,Opening balance correction,2021-12-31T23:59:59.000Z,2021-12-31T23:59:59.000Z
+txn_ad5b5509ce70,2021-12-31,income,86341.84,RUB,0,acc_5406da8ff21c,,,0,,,Opening balance correction,2021-12-31T23:59:59.000Z,2021-12-31T23:59:59.000Z
+txn_e868fec4f36e,2021-12-31,income,2225731.41,RUB,0,acc_72b12e885ea7,,,0,,,Opening balance correction,2021-12-31T23:59:59.000Z,2021-12-31T23:59:59.000Z
 txn_7cd6976db668,2022-01-02,expense,493,RUB,0,acc_1865128d98f4,cat_7b334b726036,,0,,,,2022-01-02T07:23:57.000Z,2022-01-02T04:24:02.000Z
 txn_3dc4d80c6cb2,2022-01-06,expense,3800,RUB,0,acc_1865128d98f4,cat_bf4e28785ab0,,0,,,,2022-01-06T19:00:30.000Z,2022-02-17T13:06:43.000Z
 txn_e79076812165,2022-01-07,income,59100.98,RUB,0,acc_1865128d98f4,,,0,,,← Tinkoff Saving,2022-01-07T12:20:18.000Z,2022-01-07T09:20:48.000Z

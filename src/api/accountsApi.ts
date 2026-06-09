@@ -21,7 +21,7 @@ export async function appendAccount(a: Account): Promise<void> {
 export async function updateAccount(a: Account): Promise<void> {
   const rowNum = await findRowIndex(SHEET_ACCOUNTS, a.id)
   if (!rowNum) { await appendAccount(a); return }
-  const range = `${SHEET_ACCOUNTS}!A${rowNum}:I${rowNum}`
+  const range = `${SHEET_ACCOUNTS}!A${rowNum}:J${rowNum}`
   await sheetsRequest('PUT', `values/${range}?valueInputOption=RAW`, {
     range, majorDimension: 'ROWS', values: [accountToRow(a)],
   })

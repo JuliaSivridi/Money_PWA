@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Money PWA — Technical Specification</title>
+  <style>
+  @page { margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #1a1a1a;
+    background: #fff;
+    padding: 0;
+  }
+
+  /* Cover page */
+  .cover {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 80px 72px;
+    background: #1c1c1c;
+    color: #fff;
+    page-break-after: always;
+  }
+  .cover .logo {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .cover .logo span { color: #e07e38; }
+  .cover .subtitle {
+    font-size: 18px;
+    color: #a1a1aa;
+    margin-bottom: 40px;
+  }
+  .cover .meta { font-size: 13px; color: #71717a; line-height: 2; }
+  .cover .meta strong { color: #d4d4d8; }
+  .cover .accent-line {
+    width: 60px;
+    height: 4px;
+    background: #e07e38;
+    border-radius: 2px;
+    margin-bottom: 32px;
+  }
+  .cover .inspiration {
+    margin-top: 48px;
+    padding: 16px 20px;
+    border: 1px solid #2a2a2a;
+    border-left: 3px solid #e07e38;
+    border-radius: 6px;
+    background: #222;
+    font-size: 12px;
+    color: #a1a1aa;
+    max-width: 480px;
+  }
+  .cover .inspiration strong { color: #e4e4e7; }
+
+  /* Content pages */
+  .content {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 56px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #1c1c1c;
+    margin-top: 48px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e07e38;
+    page-break-before: always;
+  }
+  h1:first-child { page-break-before: avoid; margin-top: 0; }
+
+  h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1c1c1c;
+    margin-top: 32px;
+    margin-bottom: 10px;
+  }
+
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 20px;
+    margin-bottom: 6px;
+  }
+
+  p { margin-bottom: 12px; }
+
+  a { color: #e07e38; text-decoration: none; }
+
+  ul, ol {
+    margin: 8px 0 12px 22px;
+  }
+  li { margin-bottom: 4px; }
+
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: #d97706;
+  }
+
+  pre {
+    background: #1c1c1c;
+    color: #e4e4e7;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0 16px;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 12.5px;
+  }
+  th {
+    background: #f4f4f5;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    border: 1px solid #e4e4e7;
+    color: #374151;
+  }
+  td {
+    padding: 7px 12px;
+    border: 1px solid #e4e4e7;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+    margin-right: 4px;
+  }
+
+  .callout {
+    background: #fff7ed;
+    border-left: 3px solid #e07e38;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 12.5px;
+  }
+
+  .note {
+    background: #f0f9ff;
+    border-left: 3px solid #0ea5e9;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 12.5px;
+  }
+
+  .dir-tree {
+    background: #1c1c1c;
+    color: #e4e4e7;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0 16px;
+    font-family: 'Consolas', monospace;
+    font-size: 11.5px;
+    line-height: 1.8;
+  }
+  .dir-tree .dim { color: #71717a; }
+  .dir-tree .orange { color: #fb923c; }
+  .dir-tree .green { color: #86efac; }
+  .dir-tree .blue { color: #93c5fd; }
+
+  .toc {
+    background: #fafafa;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 24px 0 32px;
+  }
+  .toc h2 { margin-top: 0; margin-bottom: 12px; font-size: 15px; }
+  .toc ol { margin: 0; }
+  .toc li { margin-bottom: 6px; font-size: 13px; }
+  .toc li a { color: #374151; }
+  .toc li a:hover { color: #e07e38; }
+
+  @media print {
+    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ COVER ═══════════════════════════════ -->
+<div class="cover">
+  <div class="logo">Money<span> PWA</span></div>
+  <div class="subtitle">Technical Specification</div>
+  <div class="accent-line"></div>
+  <div class="meta">
+    <strong>Version</strong> 1.0<br>
+    <strong>Date</strong> 2026-06-09<br>
+    <strong>Repository</strong> D:\Projects\Money-PWA<br>
+    <strong>Stack</strong> React 19 · TypeScript 5.9 · Vite 7 · Zustand 5 · Dexie 4 · Google Sheets API v4
+  </div>
+  <div class="inspiration">
+    <strong>Design principle:</strong> Google Sheets as the database — no backend, no hosting costs, offline-first via IndexedDB with automatic sync on reconnect.
+  </div>
+</div>
+
+<!-- ════════════════════════════ CONTENT ════════════════════════════ -->
+<div class="content" style="max-width:720px; margin:auto">
+
+  <!-- TOC -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#s1">Overview</a></li>
+      <li><a href="#s2">Tech Stack</a></li>
+      <li><a href="#s3">Architecture</a></li>
+      <li><a href="#s4">Package / Folder Structure</a></li>
+      <li><a href="#s5">Data Model</a></li>
+      <li><a href="#s6">Database / Storage Schema</a></li>
+      <li><a href="#s7">Authentication &amp; First-Launch Setup</a></li>
+      <li><a href="#s8">Synchronization / API Layer</a></li>
+      <li><a href="#s9">UI Screens</a></li>
+      <li><a href="#s10">Key Components</a></li>
+      <li><a href="#s11">Theme &amp; Colors</a></li>
+      <li><a href="#s12">Navigation</a></li>
+      <li><a href="#s13">Loading &amp; Empty States</a></li>
+      <li><a href="#s14">CI/CD &amp; Build</a></li>
+      <li><a href="#s15">First-Time Setup (New Developer)</a></li>
+      <li><a href="#s16">Key Algorithms</a></li>
+    </ol>
+  </div>
+
+  <!-- ─────────────────────────── S1 ─────────────────────────── -->
+  <h1 id="s1">1. Overview</h1>
+
+  <p>Money PWA is an offline-first personal finance tracker. The user's own Google Sheets spreadsheet acts as the remote database — no dedicated backend is required. The app reads and writes directly to the Sheets API using OAuth2 access tokens obtained through Google Identity Services.</p>
+
+  <h2>Key design decisions</h2>
+  <ul>
+    <li><strong>Google Sheets as database.</strong> Removes the need for a backend server, hosting costs, and auth infrastructure beyond Google's OAuth2 flow. Trade-off: no real-time multi-device sync; each device reconciles on startup and on reconnect.</li>
+    <li><strong>Offline-first via Dexie (IndexedDB).</strong> All reads come from local IndexedDB; writes go to a local queue and are flushed to Sheets asynchronously. The UI never waits for the network.</li>
+    <li><strong>No persistent server-side access token.</strong> Google Identity Services issues short-lived OAuth2 access tokens (typically 3600 s). The app silently re-requests a token on startup; if the user's Google session has lapsed they see the login screen.</li>
+    <li><strong>No React Router.</strong> Navigation is a single Zustand state field (<code>selectedView</code>). No URL-based routing exists.</li>
+    <li><strong>Multi-category transactions.</strong> Each transaction carries up to two category IDs. Index 0 = primary category used for analytics; index 1 = tag only. Avoids double-counting while enabling richer labelling.</li>
+    <li><strong>Sibling design system.</strong> Shares CSS custom properties and Tailwind tokens with Tasks PWA for visual identity consistency.</li>
+  </ul>
+
+  <!-- ─────────────────────────── S2 ─────────────────────────── -->
+  <h1 id="s2">2. Tech Stack</h1>
+
+  <table>
+    <thead><tr><th>Layer</th><th>Library</th><th>Version</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>UI framework</td><td>react</td><td>19.2.0</td><td>StrictMode enabled</td></tr>
+      <tr><td>UI framework</td><td>react-dom</td><td>19.2.0</td><td></td></tr>
+      <tr><td>Build tool</td><td>vite</td><td>7.3.1</td><td>base <code>/Money_PWA/</code></td></tr>
+      <tr><td>Language</td><td>typescript</td><td>~5.9.3</td><td>strict mode</td></tr>
+      <tr><td>Styling</td><td>tailwindcss</td><td>3.4.19</td><td>darkMode: 'media'</td></tr>
+      <tr><td>Styling plugin</td><td>tailwindcss-animate</td><td>1.0.7</td><td></td></tr>
+      <tr><td>State management</td><td>zustand</td><td>5.0.11</td><td>persist middleware for auth</td></tr>
+      <tr><td>Local database</td><td>dexie</td><td>4.3.0</td><td>IndexedDB wrapper; db name MoneyDB2</td></tr>
+      <tr><td>Form handling</td><td>react-hook-form</td><td>7.71.2</td><td></td></tr>
+      <tr><td>Schema validation</td><td>zod</td><td>4.3.6</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-dialog</td><td>1.1.15</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-dropdown-menu</td><td>2.1.16</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-label</td><td>2.1.8</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-popover</td><td>1.1.15</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-scroll-area</td><td>1.2.10</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-select</td><td>2.2.6</td><td>SelectContent has onWheel stopPropagation</td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-separator</td><td>1.1.8</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-slot</td><td>1.2.4</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-tabs</td><td>1.1.12</td><td></td></tr>
+      <tr><td>UI primitives</td><td>@radix-ui/react-tooltip</td><td>1.2.8</td><td></td></tr>
+      <tr><td>Icons</td><td>lucide-react</td><td>0.575.0</td><td>Only icon library used</td></tr>
+      <tr><td>Charts</td><td>recharts</td><td>2.15.3</td><td>PieChart, BarChart</td></tr>
+      <tr><td>Drag-and-drop</td><td>@dnd-kit/core</td><td>6.3.1</td><td>Category reorder</td></tr>
+      <tr><td>Drag-and-drop</td><td>@dnd-kit/sortable</td><td>10.0.0</td><td></td></tr>
+      <tr><td>Drag-and-drop</td><td>@dnd-kit/utilities</td><td>3.2.2</td><td></td></tr>
+      <tr><td>Date utilities</td><td>date-fns</td><td>4.1.0</td><td></td></tr>
+      <tr><td>Date picker</td><td>react-day-picker</td><td>9.14.0</td><td>Imported; modals use native input</td></tr>
+      <tr><td>Class utilities</td><td>clsx + tailwind-merge</td><td>2.1.1 / 3.5.0</td><td>via <code>cn()</code> helper</td></tr>
+      <tr><td>PWA</td><td>vite-plugin-pwa</td><td>1.2.0</td><td>Workbox, autoUpdate</td></tr>
+      <tr><td>Form resolvers</td><td>@hookform/resolvers</td><td>5.2.2</td><td>zodResolver</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ─────────────────────────── S3 ─────────────────────────── -->
+  <h1 id="s3">3. Architecture</h1>
+
+  <p>Pattern: Zustand store layer over Dexie (IndexedDB) as primary data source; Google Sheets API as remote backend. No dedicated BFF or backend server.</p>
+
+  <h2>Data-flow diagram</h2>
+  <pre><code>User action
+    │
+    ▼
+React Component
+    │  calls store action
+    ▼
+Zustand Store  ──────────────────────────────────────────►  IndexedDB (Dexie)
+    │                                                             │
+    │  enqueue('create'|'update'|'delete', payload)             │  bulkPut / delete
+    ▼                                                             │
+offlineQueue (Dexie queue table)                                 │
+    │                                                             │
+    │  scheduleFlush() — 800 ms debounce                        │
+    ▼                                                             │
+syncService.flush()                                              │
+    │  dedup: latest per (entity:id:operation)                  │
+    │  for each item → sheetsClient → Sheets API                │
+    │  on success: markDone   on failure: markFailed, retry++   │
+    ▼                                                             │
+syncService.pull()                                               │
+    │  fetch all 3 tables in parallel                            │
+    │  upsertMany → delete orphans, bulkPut newer records       │
+    └────────────────────────────────────────────────────────────►
+                                                         React re-render</code></pre>
+
+  <h2>Write path</h2>
+  <ol>
+    <li>Component calls e.g. <code>useTransactionsStore.addTransaction(input)</code>.</li>
+    <li>Store computes <code>amount_base</code> via <code>convertToBase</code>.</li>
+    <li><code>db.transactions.add(t)</code> — written to IndexedDB immediately.</li>
+    <li><code>enqueue('transaction', 'create', id, t)</code> — added to queue table.</li>
+    <li>State updated optimistically: <code>set((s) =&gt; ({ transactions: [t, ...s.transactions] }))</code>.</li>
+    <li><code>adjustBalance</code> called on account (also IndexedDB + queue).</li>
+    <li><code>scheduleFlush()</code> — 800 ms debounce → <code>flush()</code> → Sheets API.</li>
+  </ol>
+
+  <h2>Read path (on app startup)</h2>
+  <ol>
+    <li><code>AppShell.useEffect</code> → <code>initialLoad()</code>.</li>
+    <li>Ensure headers exist in all three sheets.</li>
+    <li><code>flush()</code> — push any offline queue first.</li>
+    <li><code>pull()</code> — parallel GET for all three ranges; each store's <code>upsertMany</code>.</li>
+    <li><code>upsertMany</code>: deletes local records absent from Sheets; bulkPuts newer records.</li>
+    <li>On network failure: <code>loadFromDb()</code> reads from IndexedDB, UI continues offline.</li>
+  </ol>
+
+  <h2>Error handling</h2>
+  <ul>
+    <li><strong>HTTP 401:</strong> <code>sheetsClient</code> catches it, calls <code>refreshToken()</code>, retries once.</li>
+    <li><strong>Refresh fails:</strong> throws <code>'Session expired. Please sign in again.'</code></li>
+    <li><strong>Any sync error:</strong> stored in <code>syncStore.syncError</code>; Header shows <code>AlertCircle</code> icon that triggers <code>fullSync()</code> on tap.</li>
+    <li><strong>Persistent queue failures:</strong> <code>retryCount</code> incremented up to 5; items with <code>retryCount &gt;= 5</code> excluded from <code>getPending()</code>.</li>
+  </ul>
+
+  <!-- ─────────────────────────── S4 ─────────────────────────── -->
+  <h1 id="s4">4. Package / Folder Structure</h1>
+
+  <div class="dir-tree">
+Money-PWA/<br>
+├── <span class="orange">.github/workflows/deploy.yml</span>    <span class="dim">CI/CD: build + publish to GitHub Pages</span><br>
+├── <span class="blue">docs/</span>                              <span class="dim">Project documentation</span><br>
+├── <span class="blue">enrich/</span>                            <span class="dim">Data-migration scripts (ZenMoney CSV → import CSVs)</span><br>
+├── <span class="blue">public/icons/</span>                      <span class="dim">PWA icon assets</span><br>
+├── <span class="blue">src/</span><br>
+│   ├── <span class="green">main.tsx</span>                       <span class="dim">React root — StrictMode, createRoot</span><br>
+│   ├── <span class="green">App.tsx</span>                        <span class="dim">Auth gate: shows LoginPage or AppShell</span><br>
+│   ├── <span class="green">index.css</span>                      <span class="dim">CSS custom properties (design tokens), Tailwind base</span><br>
+│   │<br>
+│   ├── <span class="blue">api/</span>                           <span class="dim">All Google API calls — never call fetch from components/stores</span><br>
+│   │   ├── <span class="green">sheetsClient.ts</span>            <span class="dim">Token management, HTTP wrapper, row-index cache</span><br>
+│   │   ├── <span class="green">transactionsApi.ts</span>         <span class="dim">fetch/append/update transactions sheet</span><br>
+│   │   ├── <span class="green">accountsApi.ts</span>             <span class="dim">fetch/append/update accounts sheet</span><br>
+│   │   ├── <span class="green">categoriesApi.ts</span>           <span class="dim">fetch/append/update categories sheet</span><br>
+│   │   ├── <span class="green">driveApi.ts</span>                <span class="dim">listUserSheets — Drive API v3</span><br>
+│   │   ├── <span class="green">settingsApi.ts</span>             <span class="dim">loadSettings/saveSettings — settings!A1 JSON blob</span><br>
+│   │   ├── <span class="green">spreadsheetSetup.ts</span>        <span class="dim">ensureSpreadsheet — find or create 'db_money'</span><br>
+│   │   └── <span class="green">seedOnboarding.ts</span>          <span class="dim">Write starter data for brand-new spreadsheets</span><br>
+│   │<br>
+│   ├── <span class="blue">services/</span><br>
+│   │   ├── <span class="green">db.ts</span>                      <span class="dim">Dexie MoneyDB2 class (v1→v2 migration)</span><br>
+│   │   ├── <span class="green">syncService.ts</span>             <span class="dim">flush / pull / initialLoad / fullSync / scheduleFlush</span><br>
+│   │   ├── <span class="green">offlineQueue.ts</span>            <span class="dim">enqueue / getPending / markDone / markFailed</span><br>
+│   │   ├── <span class="green">authService.ts</span>             <span class="dim">loadGISScript / initAuth / setTokenClient</span><br>
+│   │   └── <span class="green">exchangeRateService.ts</span>     <span class="dim">fetchExchangeRates from frankfurter.app</span><br>
+│   │<br>
+│   ├── <span class="blue">store/</span>                         <span class="dim">One Zustand store per domain</span><br>
+│   │   ├── <span class="green">authStore.ts</span>               <span class="dim">user, accessToken, tokenExpiry, spreadsheetId (persisted)</span><br>
+│   │   ├── <span class="green">transactionsStore.ts</span>       <span class="dim">CRUD + upsertMany + balance side-effects</span><br>
+│   │   ├── <span class="green">accountsStore.ts</span>           <span class="dim">CRUD + adjustBalance + upsertMany</span><br>
+│   │   ├── <span class="green">categoriesStore.ts</span>         <span class="dim">CRUD + reorder + deleteCategory (transfer txns)</span><br>
+│   │   ├── <span class="green">syncStore.ts</span>               <span class="dim">isSyncing, isOnline, pendingCount, syncError</span><br>
+│   │   ├── <span class="green">uiStore.ts</span>                 <span class="dim">selectedView, filterState, analyticsMonth, settingsOpen</span><br>
+│   │   ├── <span class="green">prefsStore.ts</span>              <span class="dim">baseCurrency (persisted to settings sheet)</span><br>
+│   │   └── <span class="green">exchangeRateStore.ts</span>       <span class="dim">rates map + getRate(currency)</span><br>
+│   │<br>
+│   ├── <span class="blue">hooks/</span><br>
+│   │   ├── <span class="green">useSync.ts</span>                 <span class="dim">window online/offline/pagehide listeners</span><br>
+│   │   └── <span class="green">useTransactions.ts</span>         <span class="dim">useTransactionsByDate / useFilteredTransactions / useTotalBalance</span><br>
+│   │<br>
+│   ├── <span class="blue">components/layout/</span>            <span class="dim">AppShell, Header, Drawer, LoginPage</span><br>
+│   ├── <span class="blue">components/transactions/</span>       <span class="dim">TransactionList, TransactionModal, TransactionItem</span><br>
+│   ├── <span class="blue">components/accounts/</span>           <span class="dim">AccountsPage, AccountModal</span><br>
+│   ├── <span class="blue">components/categories/</span>         <span class="dim">CategoriesPage, CategoryModal</span><br>
+│   ├── <span class="blue">components/analytics/</span>          <span class="dim">AnalyticsPage, MonthBarChart, CategoryDonut</span><br>
+│   ├── <span class="blue">components/settings/</span>           <span class="dim">SettingsPage</span><br>
+│   ├── <span class="blue">components/common/</span>             <span class="dim">CategoryIcon, ColorPicker, IconPicker, NumericKeyboard, FilterBar, ConfirmDialog</span><br>
+│   ├── <span class="blue">components/ui/</span>                 <span class="dim">Radix-based shadcn/ui primitives</span><br>
+│   ├── <span class="blue">types/</span>                         <span class="dim">Transaction, Account, Category, QueueItem, DebtSummary, sheets</span><br>
+│   └── <span class="blue">utils/</span>                         <span class="dim">constants, sheetsMapper, currencyUtils, dateUtils, uuid</span>
+  </div>
+
+  <!-- ─────────────────────────── S5 ─────────────────────────── -->
+  <h1 id="s5">5. Data Model</h1>
+
+  <h2>Transaction</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>localId</code></td><td><code>number?</code></td><td>Dexie auto-increment; not stored in Sheets</td></tr>
+      <tr><td><code>id</code></td><td><code>string</code></td><td><code>txn_</code> + 8 hex chars from randomUUID</td></tr>
+      <tr><td><code>date</code></td><td><code>string</code></td><td>ISO date <code>yyyy-MM-dd</code></td></tr>
+      <tr><td><code>type</code></td><td><code>TransactionType</code></td><td><code>expense</code> | <code>income</code> | <code>transfer</code> | <code>debt_lent</code> | <code>debt_borrowed</code></td></tr>
+      <tr><td><code>amount</code></td><td><code>number</code></td><td>Amount in the account's currency</td></tr>
+      <tr><td><code>currency</code></td><td><code>string</code></td><td>ISO currency code (e.g. <code>EUR</code>, <code>RUB</code>)</td></tr>
+      <tr><td><code>amount_base</code></td><td><code>number</code></td><td>Amount converted to base currency; computed on create/update</td></tr>
+      <tr><td><code>account_id</code></td><td><code>string</code></td><td>Source account ID</td></tr>
+      <tr><td><code>category_ids</code></td><td><code>string[]</code></td><td>Up to 2 IDs. Index 0 = primary (analytics). Index 1 = tag. Stored as comma-separated string in Sheets.</td></tr>
+      <tr><td><code>to_account_id</code></td><td><code>string</code></td><td>Destination account (transfers); empty string otherwise</td></tr>
+      <tr><td><code>to_amount</code></td><td><code>number</code></td><td>Amount received (cross-currency transfers)</td></tr>
+      <tr><td><code>to_currency</code></td><td><code>string</code></td><td>Destination currency (transfers)</td></tr>
+      <tr><td><code>debt_ref_id</code></td><td><code>string</code></td><td>For repayments: ID of originating debt transaction</td></tr>
+      <tr><td><code>comment</code></td><td><code>string</code></td><td>Free text / payee name</td></tr>
+      <tr><td><code>created_at</code></td><td><code>string</code></td><td>ISO 8601 timestamp</td></tr>
+      <tr><td><code>updated_at</code></td><td><code>string</code></td><td>ISO 8601 timestamp</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout"><strong>Debt invariant:</strong> A debt transaction with <code>debt_ref_id = ''</code> is an <em>open</em> debt. "Mark as repaid" creates a new transaction of the same type with <code>debt_ref_id</code> = original ID. The balance effect is reversed.</div>
+
+  <h3>Balance delta by type</h3>
+  <table>
+    <thead><tr><th>type</th><th>accountId delta</th><th>toAccountId delta</th></tr></thead>
+    <tbody>
+      <tr><td>expense</td><td>−amount</td><td>—</td></tr>
+      <tr><td>income</td><td>+amount</td><td>—</td></tr>
+      <tr><td>transfer</td><td>−amount</td><td>+to_amount</td></tr>
+      <tr><td>debt_lent (open)</td><td>−amount</td><td>—</td></tr>
+      <tr><td>debt_lent (repayment, debt_ref_id set)</td><td>+amount</td><td>—</td></tr>
+      <tr><td>debt_borrowed (open)</td><td>+amount</td><td>—</td></tr>
+      <tr><td>debt_borrowed (repayment)</td><td>−amount</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Account</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>localId</code></td><td><code>number?</code></td><td>Dexie auto-increment</td></tr>
+      <tr><td><code>id</code></td><td><code>string</code></td><td><code>acc_</code> + 8 hex chars</td></tr>
+      <tr><td><code>name</code></td><td><code>string</code></td><td>Display name</td></tr>
+      <tr><td><code>currency</code></td><td><code>string</code></td><td>ISO currency code</td></tr>
+      <tr><td><code>type</code></td><td><code>AccountType</code></td><td><code>card</code> | <code>cash</code> | <code>savings</code> | <code>investment</code></td></tr>
+      <tr><td><code>color</code></td><td><code>string</code></td><td>Hex color. Fallback: <code>#6b7280</code></td></tr>
+      <tr><td><code>balance</code></td><td><code>number</code></td><td>Current balance; maintained via <code>adjustBalance()</code></td></tr>
+      <tr><td><code>archived</code></td><td><code>boolean</code></td><td>Hidden from active lists when <code>true</code></td></tr>
+      <tr><td><code>sort_order</code></td><td><code>number</code></td><td>Display order within type sections</td></tr>
+      <tr><td><code>created_at</code></td><td><code>string</code></td><td>ISO 8601 timestamp</td></tr>
+      <tr><td><code>updated_at</code></td><td><code>string</code></td><td>ISO 8601 timestamp</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><strong>Rule:</strong> Never compute or set balance inline. Always use <code>accountsStore.adjustBalance(id, delta)</code> — it updates IndexedDB, Zustand state, and enqueues the account update.</div>
+
+  <h2>Category</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>localId</code></td><td><code>number?</code></td><td>Dexie auto-increment</td></tr>
+      <tr><td><code>id</code></td><td><code>string</code></td><td><code>cat_</code> + 8 hex chars</td></tr>
+      <tr><td><code>name</code></td><td><code>string</code></td><td>Display name</td></tr>
+      <tr><td><code>icon</code></td><td><code>string</code></td><td>lucide-react icon name. Fallback: <code>Tag</code></td></tr>
+      <tr><td><code>color</code></td><td><code>string</code></td><td>Hex color. Fallback: <code>#6b7280</code></td></tr>
+      <tr><td><code>is_expense</code></td><td><code>boolean</code></td><td>Usable for expense transactions. Default: <code>TRUE</code> (only explicit <code>FALSE</code> disables)</td></tr>
+      <tr><td><code>expense_limit</code></td><td><code>number</code></td><td>Monthly spending limit (0 = no limit)</td></tr>
+      <tr><td><code>is_income</code></td><td><code>boolean</code></td><td>Usable for income transactions. Default: <code>FALSE</code></td></tr>
+      <tr><td><code>income_limit</code></td><td><code>number</code></td><td>Monthly income target (0 = no target)</td></tr>
+      <tr><td><code>sort_order</code></td><td><code>number</code></td><td>User-draggable order</td></tr>
+      <tr><td><code>created_at</code></td><td><code>string</code></td><td>ISO 8601 timestamp</td></tr>
+      <tr><td><code>updated_at</code></td><td><code>string</code></td><td>ISO 8601 timestamp</td></tr>
+    </tbody>
+  </table>
+
+  <h2>QueueItem (offline write queue)</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>localId</code></td><td><code>number?</code></td><td>Dexie auto-increment primary key</td></tr>
+      <tr><td><code>entityType</code></td><td><code>'transaction' | 'account' | 'category'</code></td><td></td></tr>
+      <tr><td><code>operationType</code></td><td><code>'create' | 'update' | 'delete'</code></td><td></td></tr>
+      <tr><td><code>entityId</code></td><td><code>string</code></td><td>Domain ID of the entity</td></tr>
+      <tr><td><code>payload</code></td><td><code>Record&lt;string, unknown&gt;</code></td><td>Full entity snapshot at write time</td></tr>
+      <tr><td><code>createdAt</code></td><td><code>string</code></td><td>ISO 8601 timestamp</td></tr>
+      <tr><td><code>status</code></td><td><code>'pending' | 'processing' | 'failed'</code></td><td></td></tr>
+      <tr><td><code>retryCount</code></td><td><code>number</code></td><td>Incremented on failure; excluded when ≥ 5</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ─────────────────────────── S6 ─────────────────────────── -->
+  <h1 id="s6">6. Database / Storage Schema</h1>
+
+  <h2>IndexedDB — Dexie <code>MoneyDB2</code></h2>
+
+  <div class="note"><strong>Why MoneyDB2?</strong> The database was renamed from <code>MoneyDB</code> to avoid Dexie's "cannot change primary key" restriction when migrating. Old MoneyDB data is abandoned; it re-syncs from Sheets automatically.</div>
+
+  <h3>Version history</h3>
+  <table>
+    <thead><tr><th>Version</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Initial schema. Transactions indexed on <code>category_id</code> (single string)</td></tr>
+      <tr><td>2</td><td>Multi-category: index changed to <code>*category_ids</code> (multi-entry). Upgrade callback migrates <code>category_id → category_ids: [old]</code> or <code>[]</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Table schemas (v2)</h3>
+  <table>
+    <thead><tr><th>Table</th><th>Dexie schema string</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>transactions</code></td><td><code>id, date, type, account_id, *category_ids, updated_at</code></td><td><code>*</code> = multi-entry index</td></tr>
+      <tr><td><code>accounts</code></td><td><code>id, type, archived, updated_at</code></td><td></td></tr>
+      <tr><td><code>categories</code></td><td><code>id, sort_order, updated_at</code></td><td></td></tr>
+      <tr><td><code>queue</code></td><td><code>++localId, status, entityType, entityId, createdAt</code></td><td><code>++</code> = auto-increment PK</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Google Sheets — <code>db_money</code></h2>
+
+  <h3>Sheet: <code>transactions</code> (A:O, 15 columns)</h3>
+  <table>
+    <thead><tr><th>Col</th><th>Index</th><th>Field</th><th>Format</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>0</td><td>id</td><td><code>txn_a1b2c3d4</code></td></tr>
+      <tr><td>B</td><td>1</td><td>date</td><td><code>yyyy-MM-dd</code></td></tr>
+      <tr><td>C</td><td>2</td><td>type</td><td><code>expense</code> | <code>income</code> | <code>transfer</code> | <code>debt_lent</code> | <code>debt_borrowed</code></td></tr>
+      <tr><td>D</td><td>3</td><td>amount</td><td>decimal string, e.g. <code>42.50</code></td></tr>
+      <tr><td>E</td><td>4</td><td>currency</td><td>ISO code</td></tr>
+      <tr><td>F</td><td>5</td><td>amount_base</td><td>decimal string</td></tr>
+      <tr><td>G</td><td>6</td><td>account_id</td><td><code>acc_</code> prefixed</td></tr>
+      <tr><td>H</td><td>7</td><td>category_ids</td><td>comma-separated, e.g. <code>cat_abc,cat_xyz</code></td></tr>
+      <tr><td>I</td><td>8</td><td>to_account_id</td><td><code>acc_</code> prefixed or empty</td></tr>
+      <tr><td>J</td><td>9</td><td>to_amount</td><td>decimal string or <code>0</code></td></tr>
+      <tr><td>K</td><td>10</td><td>to_currency</td><td>ISO code or empty</td></tr>
+      <tr><td>L</td><td>11</td><td>debt_ref_id</td><td>transaction ID or empty</td></tr>
+      <tr><td>M</td><td>12</td><td>comment</td><td>string</td></tr>
+      <tr><td>N</td><td>13</td><td>created_at</td><td>ISO 8601 datetime</td></tr>
+      <tr><td>O</td><td>14</td><td>updated_at</td><td>ISO 8601 datetime</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Sheet: <code>accounts</code> (A:J, 10 columns)</h3>
+  <table>
+    <thead><tr><th>Col</th><th>Index</th><th>Field</th><th>Format</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>0</td><td>id</td><td><code>acc_</code> prefixed</td></tr>
+      <tr><td>B</td><td>1</td><td>name</td><td>string</td></tr>
+      <tr><td>C</td><td>2</td><td>currency</td><td>ISO code; default <code>EUR</code></td></tr>
+      <tr><td>D</td><td>3</td><td>type</td><td><code>card</code> | <code>cash</code> | <code>savings</code> | <code>investment</code></td></tr>
+      <tr><td>E</td><td>4</td><td>balance</td><td>decimal string</td></tr>
+      <tr><td>F</td><td>5</td><td>archived</td><td><code>TRUE</code> | <code>FALSE</code></td></tr>
+      <tr><td>G</td><td>6</td><td>sort_order</td><td>integer string</td></tr>
+      <tr><td>H</td><td>7</td><td>created_at</td><td>ISO 8601</td></tr>
+      <tr><td>I</td><td>8</td><td>updated_at</td><td>ISO 8601</td></tr>
+      <tr><td>J</td><td>9</td><td>color</td><td>hex color, e.g. <code>#3b82f6</code>; default <code>#6b7280</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Sheet: <code>categories</code> (A:K, 11 columns)</h3>
+  <table>
+    <thead><tr><th>Col</th><th>Index</th><th>Field</th><th>Format</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>0</td><td>id</td><td><code>cat_</code> prefixed</td></tr>
+      <tr><td>B</td><td>1</td><td>name</td><td>string</td></tr>
+      <tr><td>C</td><td>2</td><td>icon</td><td>lucide-react name; default <code>Tag</code></td></tr>
+      <tr><td>D</td><td>3</td><td>color</td><td>hex; default <code>#6b7280</code></td></tr>
+      <tr><td>E</td><td>4</td><td>is_expense</td><td><code>TRUE</code> | <code>FALSE</code> — only explicit <code>FALSE</code> disables</td></tr>
+      <tr><td>F</td><td>5</td><td>expense_limit</td><td>decimal string or <code>0</code></td></tr>
+      <tr><td>G</td><td>6</td><td>is_income</td><td><code>TRUE</code> | <code>FALSE</code></td></tr>
+      <tr><td>H</td><td>7</td><td>income_limit</td><td>decimal string or <code>0</code></td></tr>
+      <tr><td>I</td><td>8</td><td>sort_order</td><td>integer string</td></tr>
+      <tr><td>J</td><td>9</td><td>created_at</td><td>ISO 8601</td></tr>
+      <tr><td>K</td><td>10</td><td>updated_at</td><td>ISO 8601</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Sheet: <code>settings</code></h3>
+  <p>Single cell <code>A1</code> contains a JSON blob:</p>
+  <pre><code>{ "base_currency": "EUR", "exchange_rates": { "USD": 1.08, "RUB": 95.4, ... } }</code></pre>
+  <p>Used as fallback exchange rate cache when <code>api.frankfurter.app</code> is unreachable.</p>
+
+  <h2>localStorage (<code>money-auth</code>)</h2>
+  <table>
+    <thead><tr><th>Key</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>user</td><td><code>{ name, email, picture }</code> or null</td><td>Google user profile</td></tr>
+      <tr><td>accessToken</td><td>string or null</td><td>Current OAuth2 access token</td></tr>
+      <tr><td>tokenExpiry</td><td>number or null</td><td><code>Date.now() + expiresIn * 1000</code></td></tr>
+      <tr><td>spreadsheetId</td><td>string</td><td>Active Google Sheets file ID</td></tr>
+      <tr><td>spreadsheetName</td><td>string</td><td>Display name</td></tr>
+    </tbody>
+  </table>
+  <p><code>isAuthenticated</code> is NOT persisted — recomputed on startup. Additional key <code>money-lastAccountId</code> stores the last account used in TransactionModal.</p>
+
+  <!-- ─────────────────────────── S7 ─────────────────────────── -->
+  <h1 id="s7">7. Authentication &amp; First-Launch Setup</h1>
+
+  <h2>OAuth2 scopes</h2>
+  <pre><code>email
+profile
+https://www.googleapis.com/auth/spreadsheets
+https://www.googleapis.com/auth/drive.readonly</code></pre>
+
+  <h2>Sign-in flow</h2>
+  <ol>
+    <li><code>App.tsx</code> mounts → <code>initAuth()</code> (idempotent, runs once per session).</li>
+    <li><code>initAuth</code> injects <code>https://accounts.google.com/gsi/client</code> script (id <code>gis-script</code>).</li>
+    <li><code>google.accounts.oauth2.initTokenClient</code> initialised with <code>CLIENT_ID</code>, scopes, and <code>login_hint</code> = persisted user email.</li>
+    <li>Back in <code>App.tsx</code>:
+      <ul>
+        <li>If <code>isAuthenticated</code> already true → skip.</li>
+        <li>Else if <code>accessToken</code> valid (expiry &gt; now + 60 s) → <code>setToken</code> silently.</li>
+        <li>Else if <code>user</code> exists → <code>refreshToken()</code> silently (prompt: <code>''</code>, uses browser Google session).</li>
+        <li>If <code>refreshToken()</code> throws → show <code>LoginPage</code>.</li>
+      </ul>
+    </li>
+    <li>User taps "Sign in with Google" → GIS popup.</li>
+    <li>GIS callback → <code>resolveTokenRequest(token, expiresIn)</code> → <code>setToken</code> → fetch <code>/oauth2/v3/userinfo</code> → <code>setUser</code>.</li>
+    <li>React re-renders; <code>AppShell</code> mounts.</li>
+  </ol>
+
+  <h2>AppShell first-launch setup</h2>
+  <ol>
+    <li><code>fetchExchangeRates(baseCurrency)</code> — GET frankfurter.app.</li>
+    <li><code>ensureSpreadsheet()</code> — search Drive for <code>name='db_money'</code>; create with 4 sheets if not found.</li>
+    <li>If new spreadsheet → <code>seedOnboarding()</code>: 2 accounts, 3 categories, 1 expense.</li>
+    <li><code>initialLoad()</code> — ensure headers, flush queue, pull all data.</li>
+    <li><code>prefs.load()</code> — reads <code>settings!A1</code>, sets <code>baseCurrency</code>.</li>
+  </ol>
+
+  <h2>Token refresh</h2>
+  <ul>
+    <li><strong>Proactive:</strong> <code>sheetsClient.getToken()</code> refreshes if <code>tokenExpiry &lt; Date.now() + 60_000</code>.</li>
+    <li><strong>Reactive:</strong> HTTP 401 → <code>refreshToken()</code> → retry request once.</li>
+  </ul>
+
+  <!-- ─────────────────────────── S8 ─────────────────────────── -->
+  <h1 id="s8">8. Synchronization / API Layer</h1>
+
+  <h2>Row-index cache</h2>
+  <p><code>rowCache: Map&lt;string, number&gt;</code> in <code>sheetsClient.ts</code>. Populated lazily by <code>findRowIndex(sheet, entityId)</code> — fetches column A, builds cache for all IDs. Cleared after <code>flush()</code> via <code>invalidateRowCache()</code>. Prevents full column scan on every update.</p>
+
+  <h2><code>flush()</code> — push local queue to Sheets</h2>
+  <pre><code>1. getPending() → items where status in ['pending','failed'] AND retryCount &lt; 5
+2. Dedup: keep only latest per key "${entityType}:${entityId}:${operationType}"
+3. Mark superseded duplicates as done (deleted from queue, no API call)
+4. For each latest item:
+   a. markProcessing(localId)
+   b. processQueueItem (append or PUT)
+   c. markDone on success | markFailed(retryCount+1) on error
+5. invalidateRowCache()
+6. setPendingCount(await getQueueLength())</code></pre>
+
+  <h2><code>pull()</code> — Sheets → IndexedDB</h2>
+  <pre><code>1. Parallel: fetchAllTransactions, fetchAllAccounts, fetchAllCategories
+2. Parallel: upsertMany for each store
+3. setLastSyncAt(now())</code></pre>
+
+  <h2><code>upsertMany</code> pattern</h2>
+  <pre><code>existing = db.TABLE.toArray()
+incomingIds = new Set(incoming.map(t => t.id))
+
+// True sync: delete local records absent from Sheets
+toDelete = existing.filter(t => !incomingIds.has(t.id))
+if toDelete.length > 0: db.TABLE.bulkDelete(toDelete.map(t => t.id))
+
+// Update only newer records
+toStore = incoming.filter(item => !local || item.updated_at > local.updated_at)
+if toStore.length > 0: db.TABLE.bulkPut(toStore)
+
+set({ TABLE: (await db.TABLE.toArray()).sort(...) })</code></pre>
+
+  <h2>Sync triggers</h2>
+  <table>
+    <thead><tr><th>Event</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>App startup (AppShell mount)</td><td><code>initialLoad()</code></td></tr>
+      <tr><td><code>window online</code></td><td><code>fullSync()</code> (flush + pull)</td></tr>
+      <tr><td><code>window pagehide</code></td><td><code>flush()</code> only (best-effort)</td></tr>
+      <tr><td>Any write action</td><td><code>scheduleFlush()</code> — 800 ms debounce</td></tr>
+    </tbody>
+  </table>
+  <div class="note">No periodic sync. The <code>visibilitychange</code> interval was removed to prevent spurious spinner activity.</div>
+
+  <h2>API methods</h2>
+  <table>
+    <thead><tr><th>Function</th><th>HTTP</th><th>Endpoint</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>fetchAllTransactions</td><td>GET</td><td><code>values/transactions!A:O</code></td><td>Skips row 0 (header) and rows with empty col A</td></tr>
+      <tr><td>appendTransaction</td><td>POST</td><td><code>values/transactions!A:O:append?valueInputOption=RAW&amp;insertDataOption=INSERT_ROWS</code></td><td></td></tr>
+      <tr><td>updateTransaction</td><td>PUT</td><td><code>values/transactions!A{n}:O{n}?valueInputOption=RAW</code></td><td>Falls back to append if row not found in cache</td></tr>
+      <tr><td>ensureTransactionHeader</td><td>GET+PUT</td><td><code>values/transactions!A1:O1</code></td><td>Writes header only if row 1 is empty</td></tr>
+      <tr><td>(same pattern for accounts, categories)</td><td></td><td></td><td></td></tr>
+      <tr><td>ensureSpreadsheet</td><td>GET Drive + POST Sheets</td><td>Drive files query + Sheets create</td><td>Creates if not found</td></tr>
+      <tr><td>listUserSheets</td><td>GET Drive</td><td><code>files?q=mimeType=...&amp;orderBy=modifiedTime+desc</code></td><td></td></tr>
+      <tr><td>loadSettings / saveSettings</td><td>GET / PUT</td><td><code>values/settings!A1</code></td><td>JSON blob in single cell</td></tr>
+      <tr><td>fetchExchangeRates</td><td>GET (external)</td><td><code>https://api.frankfurter.app/latest?from={base}</code></td><td>Not via sheetsClient</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ─────────────────────────── S9 ─────────────────────────── -->
+  <h1 id="s9">9. UI Screens</h1>
+
+  <h2 id="s9-1">9.1 LoginPage</h2>
+  <p><strong>File:</strong> <code>src/components/layout/LoginPage.tsx</code> — shown when <code>isAuthenticated === false</code>.</p>
+  <ul>
+    <li><code>min-h-dvh</code> centered flex column, <code>max-w-sm</code> card</li>
+    <li>App logo: <code>w-12 h-12 bg-primary rounded-xl</code> with <code>Wallet</code> icon (24px)</li>
+    <li>Title "Money" (<code>text-2xl font-bold</code>) + subtitle "Personal finance tracker"</li>
+    <li>Sign-in button: full-width, <code>size="lg"</code>, inline Google SVG, text "Sign in with Google" / "Signing in..."</li>
+  </ul>
+
+  <h2 id="s9-2">9.2 AppShell</h2>
+  <p><strong>File:</strong> <code>src/components/layout/AppShell.tsx</code></p>
+  <ul>
+    <li>Layout: <code>flex flex-col h-dvh</code> · Header (<code>h-14</code>) · body row</li>
+    <li>Desktop (<code>md:</code>): <code>aside w-60 border-r</code> with Drawer</li>
+    <li>Mobile: Radix <code>Sheet</code> (side="left", w-60) opened by hamburger</li>
+    <li><code>main flex-1 overflow-hidden</code> — one of the 4 view components or SettingsPage</li>
+    <li>When <code>settingsOpen</code>: sidebar hidden, SettingsPage takes full main area</li>
+  </ul>
+
+  <h2 id="s9-3">9.3 Header</h2>
+  <p><strong>File:</strong> <code>src/components/layout/Header.tsx</code></p>
+  <p>Sync indicator (priority order): offline <code>WifiOff</code> (amber-500) → error <code>AlertCircle</code> (destructive, tap to retry) → syncing <code>RefreshCw animate-spin</code> → pending <code>RefreshCw</code> (tap to sync). User avatar opens dropdown with Settings and Sign out items.</p>
+
+  <h2 id="s9-4">9.4 TransactionList</h2>
+  <p><strong>File:</strong> <code>src/components/transactions/TransactionList.tsx</code></p>
+  <ul>
+    <li><strong>Balance bar:</strong> sum of non-archived, non-investment accounts</li>
+    <li><strong>Infinite scroll:</strong> PAGE_SIZE = 20 date-groups; <code>IntersectionObserver rootMargin: '200px'</code>; resets on filter change</li>
+    <li><strong>Date group header:</strong> <code>"14 Jun · Saturday"</code> (current year) or <code>"14 Jun 2023 · Wednesday"</code> (past years); daily net right-aligned in green/red</li>
+    <li><strong>Empty state:</strong> <code>Wallet</code> 40px, "No transactions yet", "+ Add transaction" button</li>
+    <li><strong>FAB:</strong> <code>fixed bottom-6 right-6 w-14 h-14 bg-primary rounded-full</code>, <code>Plus</code> 24px</li>
+  </ul>
+
+  <h2 id="s9-5">9.5 TransactionModal</h2>
+  <p><strong>File:</strong> <code>src/components/transactions/TransactionModal.tsx</code></p>
+  <p>4 tabs: <strong>Expense · Income · Transfer · Debt</strong>. Each tab layout:</p>
+  <ol>
+    <li>DateInput (overlaid native <code>&lt;input type="date"&gt;</code>)</li>
+    <li>Category grid (expense/income only) — 4 columns, max-h-36, sorted by usage frequency desc</li>
+    <li>Account select + AmountField (w-28) in one row</li>
+    <li>Comment input</li>
+  </ol>
+  <p>Transfer: cross-currency adds a second To account row with separate amount. Debt: lent/borrowed toggle + "Mark as repaid" button in edit mode. Shared NumericKeyboard at bottom. Footer: Delete (mr-auto, destructive) in edit mode; Cancel + Save on right.</p>
+
+  <h2 id="s9-6">9.6 AccountsPage</h2>
+  <p><strong>File:</strong> <code>src/components/accounts/AccountsPage.tsx</code></p>
+  <p>Sections rendered in explicit order: <strong>cash → card → savings → investment</strong>. Each section collapsible. Account row: colored circle icon, name, currency, balance (negative = <code>text-red-400</code>). Open debts shown below sections. Archived accounts togglable.</p>
+
+  <h2 id="s9-7">9.7 CategoriesPage</h2>
+  <p><strong>File:</strong> <code>src/components/categories/CategoriesPage.tsx</code></p>
+  <p>Drag-and-drop list via <code>@dnd-kit</code>. PointerSensor activation distance: 8px. GripVertical handle with <code>touch-none</code>. Expense badge (rose), income badge (emerald); limit shown if &gt; 0.</p>
+
+  <h2 id="s9-8">9.8 AnalyticsPage</h2>
+  <p><strong>File:</strong> <code>src/components/analytics/AnalyticsPage.tsx</code></p>
+  <ul>
+    <li><strong>MonthBarChart:</strong> 12-month trailing, height 120px, bars <code>radius [3,3,0,0]</code>; active month full primary color, others 35% opacity; clickable</li>
+    <li><strong>Month selector:</strong> ChevronLeft / ChevronRight; future months disabled</li>
+    <li><strong>CategoryDonut:</strong> PieChart <code>innerRadius=60 outerRadius=90 paddingAngle=2</code>, height 200px; primary category only (index 0) — avoids double-counting; spend-vs-limit progress bars below</li>
+    <li><strong>Empty state:</strong> <code>BarChart2</code> 40px, "No data for this month"</li>
+  </ul>
+
+  <h2 id="s9-9">9.9 SettingsPage</h2>
+  <p><strong>File:</strong> <code>src/components/settings/SettingsPage.tsx</code></p>
+  <p>Two cards: <strong>Spreadsheet</strong> (switch via Drive file list, ordered by modifiedTime desc; switching clears local IndexedDB) and <strong>Base currency</strong> (EUR/USD/RUB; change triggers exchange rate refetch and settings sheet save).</p>
+
+  <!-- ─────────────────────────── S10 ─────────────────────────── -->
+  <h1 id="s10">10. Key Components</h1>
+
+  <h2 id="s10-1">10.1 CategoryIcon</h2>
+  <p><strong>File:</strong> <code>src/components/common/CategoryIcon.tsx</code></p>
+  <pre><code>CategoryIcon({ icon: string, color: string, size?: number = 16 })</code></pre>
+  <ul>
+    <li>Container: <code>rounded-full</code>, size <code>(size + 12) × (size + 12)</code> px (inline style)</li>
+    <li>Background: <code>color</code> prop; icon color always <code>#fff</code></li>
+    <li>Icon lookup: <code>icons[icon]</code> from lucide-react, fallback <code>icons.Tag</code></li>
+  </ul>
+
+  <h2 id="s10-2">10.2 NumericKeyboard</h2>
+  <p><strong>File:</strong> <code>src/components/common/NumericKeyboard.tsx</code></p>
+  <pre><code>NumericKeyboard({ value: string, onChange: (v: string) => void })</code></pre>
+  <p>4×3 grid (1–9, ., 0, ⌫). Rules: ⌫ removes last char; <code>.</code> appended once (prefixes <code>0</code> if empty); digit replaces leading <code>0</code>; max 2 decimal places enforced. Uses <code>onPointerDown + e.preventDefault()</code> to prevent focus loss. <code>touchAction: 'manipulation'</code> on each key.</p>
+
+  <h2 id="s10-3">10.3 ColorPicker</h2>
+  <p><strong>File:</strong> <code>src/components/common/ColorPicker.tsx</code></p>
+  <pre><code>ColorPicker({ value: string, onChange: (color: string) => void })</code></pre>
+  <p>22 swatches in 11-column grid. Each: <code>w-7 h-7 rounded-full</code> (28px). Selected shows <code>Check</code> (14px, white, strokeWidth 3). Palette: red pair, orange pair, yellow pair, green pair, emerald pair, teal pair, cyan pair, blue pair, violet pair, pink pair, gray pair.</p>
+
+  <h2 id="s10-4">10.4 IconPicker</h2>
+  <p><strong>File:</strong> <code>src/components/common/IconPicker.tsx</code></p>
+  <pre><code>IconPicker({ value: string, onChange: (icon: string) => void })</code></pre>
+  <p>Search input + 6-column grid (<code>max-h-48</code>). 37 available icons. Each button: <code>w-10 h-10</code>, icon 18px. Selected: <code>border-primary bg-accent ring-2 ring-primary</code>.</p>
+
+  <h2 id="s10-5">10.5 FilterBar</h2>
+  <p><strong>File:</strong> <code>src/components/common/FilterBar.tsx</code></p>
+  <pre><code>FilterBar({ filterState: FilterState })</code></pre>
+  <p>Returns null when no filters active. Horizontal scrollable chip row (<code>overflow-x-auto scrollbar-none flex-nowrap</code>). Chip: <code>bg-primary/10 text-primary text-xs px-2 py-1 rounded-full</code> with <code>X</code> (11px) remove. "Clear all" at end.</p>
+
+  <h2 id="s10-6">10.6 ConfirmDialog</h2>
+  <p><strong>File:</strong> <code>src/components/common/ConfirmDialog.tsx</code></p>
+  <pre><code>ConfirmDialog({ open, title, description?, confirmLabel = 'Delete', onConfirm, onCancel })</code></pre>
+  <p><code>max-w-sm</code> dialog. Cancel (outline) + Delete (destructive). Overlay close triggers <code>onCancel</code>.</p>
+
+  <h2 id="s10-7">10.7 AmountField / DateInput</h2>
+  <p><strong>AmountField:</strong> <code>w-28 shrink-0 text-right border rounded-md cursor-pointer select-none</code>. Active state: <code>border-ring ring-2 ring-ring</code>.</p>
+  <p><strong>DateInput:</strong> Styled div showing <code>DD.MM.YYYY</code> with invisible native <code>&lt;input type="date"&gt;</code> absolutely positioned over it (opacity-0, full size). Ensures native date picker on all platforms.</p>
+
+  <!-- ─────────────────────────── S11 ─────────────────────────── -->
+  <h1 id="s11">11. Theme &amp; Colors</h1>
+
+  <p>All tokens defined in <code>src/index.css</code>. Dark mode: <code>@media (prefers-color-scheme: dark)</code> — no JS toggle.</p>
+
+  <table>
+    <thead><tr><th>Token</th><th>Light (HSL)</th><th>Dark (HSL)</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>--background</code></td><td>0 0% 100%</td><td>0 0% 11%</td><td>Page background</td></tr>
+      <tr><td><code>--foreground</code></td><td>240 10% 10%</td><td>0 0% 95%</td><td>Body text</td></tr>
+      <tr><td><code>--card</code></td><td>0 0% 100%</td><td>0 0% 21%</td><td>Card surfaces</td></tr>
+      <tr><td><code>--card-foreground</code></td><td>240 10% 10%</td><td>0 0% 95%</td><td>Card text</td></tr>
+      <tr><td><code>--popover</code></td><td>0 0% 100%</td><td>0 0% 14%</td><td>Dropdowns, popovers</td></tr>
+      <tr><td><code>--popover-foreground</code></td><td>240 10% 10%</td><td>0 0% 95%</td><td></td></tr>
+      <tr><td><code>--primary</code></td><td>25 75% 55% (orange)</td><td>25 65% 63%</td><td>Buttons, FAB, rings</td></tr>
+      <tr><td><code>--primary-foreground</code></td><td>0 0% 100%</td><td>0 0% 100%</td><td>Text on primary</td></tr>
+      <tr><td><code>--secondary</code></td><td>25 8% 95%</td><td>0 0% 21%</td><td>Subtle surfaces</td></tr>
+      <tr><td><code>--secondary-foreground</code></td><td>240 10% 10%</td><td>0 0% 95%</td><td></td></tr>
+      <tr><td><code>--muted</code></td><td>25 8% 95%</td><td>0 0% 21%</td><td>Group headers</td></tr>
+      <tr><td><code>--muted-foreground</code></td><td>0 0% 42%</td><td>0 0% 58%</td><td>Placeholder text</td></tr>
+      <tr><td><code>--accent</code></td><td>38 60% 96% (warm cream)</td><td>0 0% 18%</td><td>Hover / selected</td></tr>
+      <tr><td><code>--accent-foreground</code></td><td>25 60% 35%</td><td>0 0% 95%</td><td></td></tr>
+      <tr><td><code>--destructive</code></td><td>0 70% 67% (red)</td><td>0 55% 58%</td><td>Delete actions</td></tr>
+      <tr><td><code>--destructive-foreground</code></td><td>0 0% 100%</td><td>0 0% 100%</td><td></td></tr>
+      <tr><td><code>--border</code></td><td>0 0% 88%</td><td>0 0% 29%</td><td>All borders</td></tr>
+      <tr><td><code>--input</code></td><td>0 0% 88%</td><td>0 0% 22%</td><td>Input borders</td></tr>
+      <tr><td><code>--ring</code></td><td>25 75% 55% (= primary)</td><td>25 65% 63%</td><td>Focus rings</td></tr>
+      <tr><td><code>--radius</code></td><td>0.5rem</td><td>0.5rem</td><td>Border radius base</td></tr>
+    </tbody>
+  </table>
+
+  <p>Tailwind font-size overrides: <code>text-xs</code> and <code>text-sm</code> both map to <code>1rem / 1.5rem</code> line-height.</p>
+  <p>PWA accent: <code>#e07e38</code> (<code>theme_color</code> and <code>background_color</code> in web manifest).</p>
+
+  <!-- ─────────────────────────── S12 ─────────────────────────── -->
+  <h1 id="s12">12. Navigation</h1>
+
+  <p>No React Router. Navigation state: <code>useUIStore.selectedView</code>.</p>
+
+  <table>
+    <thead><tr><th>selectedView</th><th>Component</th><th>Entry</th></tr></thead>
+    <tbody>
+      <tr><td><code>'transactions'</code></td><td>TransactionList</td><td>Default on load</td></tr>
+      <tr><td><code>'accounts'</code></td><td>AccountsPage</td><td>Drawer</td></tr>
+      <tr><td><code>'categories'</code></td><td>CategoriesPage</td><td>Drawer</td></tr>
+      <tr><td><code>'analytics'</code></td><td>AnalyticsPage</td><td>Drawer</td></tr>
+      <tr><td>(any) + settingsOpen=true</td><td>SettingsPage</td><td>Header → user menu → Settings</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">No deeplinks. The app has no URL-based routing; the GitHub Pages URL is always <code>/Money_PWA/</code>.</div>
+
+  <!-- ─────────────────────────── S13 ─────────────────────────── -->
+  <h1 id="s13">13. Loading &amp; Empty States</h1>
+
+  <h2>Loading indicators</h2>
+  <table>
+    <thead><tr><th>Situation</th><th>Indicator</th></tr></thead>
+    <tbody>
+      <tr><td>Initial startup (GIS + token check)</td><td>Full-page "Loading..." (<code>text-muted-foreground</code>)</td></tr>
+      <tr><td>Sync in progress</td><td><code>RefreshCw</code> 16px <code>animate-spin</code> in Header</td></tr>
+      <tr><td>Offline with pending writes</td><td><code>WifiOff</code> 16px amber-500 with tooltip count</td></tr>
+      <tr><td>TransactionModal saving</td><td>Button text "Saving…", disabled</td></tr>
+      <tr><td>AccountModal saving</td><td>Button text "Saving...", <code>isSubmitting</code> disabled</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Empty states</h2>
+  <table>
+    <thead><tr><th>Screen</th><th>Icon</th><th>Message</th></tr></thead>
+    <tbody>
+      <tr><td>TransactionList</td><td><code>Wallet</code> 40px opacity-20</td><td>"No transactions yet" + "+ Add transaction" ghost button</td></tr>
+      <tr><td>AccountsPage</td><td><code>CreditCard</code> 40px opacity-20</td><td>"No accounts yet"</td></tr>
+      <tr><td>CategoriesPage</td><td><code>Tag</code> 40px opacity-20</td><td>"No categories yet"</td></tr>
+      <tr><td>CategoryDonut</td><td><code>BarChart2</code> 40px opacity-20</td><td>"No data for this month"</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ─────────────────────────── S14 ─────────────────────────── -->
+  <h1 id="s14">14. CI/CD &amp; Build</h1>
+
+  <p><strong>Workflow:</strong> <code>.github/workflows/deploy.yml</code></p>
+
+  <table>
+    <thead><tr><th>Step</th><th>Details</th></tr></thead>
+    <tbody>
+      <tr><td>Trigger</td><td>Push to <code>main</code> branch</td></tr>
+      <tr><td>Runner</td><td><code>ubuntu-latest</code></td></tr>
+      <tr><td>Node</td><td>20 (npm cache)</td></tr>
+      <tr><td>Install</td><td><code>npm ci</code></td></tr>
+      <tr><td>Build</td><td><code>npm run build</code> (<code>tsc -b &amp;&amp; vite build</code>)</td></tr>
+      <tr><td>Secret</td><td><code>VITE_GOOGLE_CLIENT_ID</code> via <code>secrets.VITE_GOOGLE_CLIENT_ID</code></td></tr>
+      <tr><td>Publish</td><td><code>peaceiris/actions-gh-pages@v4</code>, dir <code>./dist</code>, <code>GITHUB_TOKEN</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Vite / PWA config</h2>
+  <ul>
+    <li><code>base: '/Money_PWA/'</code></li>
+    <li>PWA <code>registerType: 'autoUpdate'</code></li>
+    <li>Manifest <code>theme_color: '#e07e38'</code>, <code>display: 'standalone'</code></li>
+    <li>Workbox: <code>sheets.googleapis.com</code> → NetworkFirst 10 s; <code>api.frankfurter.app</code> → NetworkFirst 10 s; <code>accounts.google.com/gsi</code> → NetworkOnly</li>
+  </ul>
+
+  <!-- ─────────────────────────── S15 ─────────────────────────── -->
+  <h1 id="s15">15. First-Time Setup (New Developer)</h1>
+
+  <ol>
+    <li><strong>Clone</strong> the repository.</li>
+    <li><strong>Google Cloud Console:</strong>
+      <ul>
+        <li>Create a project</li>
+        <li>Enable <em>Google Sheets API</em> and <em>Google Drive API</em></li>
+        <li>Create OAuth2 client ID (Web application)</li>
+        <li>Add Authorized JavaScript origins: <code>http://localhost:5173</code> and <code>https://&lt;username&gt;.github.io</code></li>
+      </ul>
+    </li>
+    <li><strong>Create <code>.env.local</code></strong> in project root:<br>
+      <code>VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com</code>
+    </li>
+    <li><strong>Install:</strong> <code>npm install</code></li>
+    <li><strong>Run:</strong> <code>npm run dev</code> — served at <code>http://localhost:5173/Money_PWA/</code></li>
+    <li><strong>First sign-in:</strong> consent screen → app creates <code>db_money</code> spreadsheet → seeds starter data.</li>
+    <li><strong>GitHub Actions secret:</strong> Settings → Secrets → Actions → add <code>VITE_GOOGLE_CLIENT_ID</code>.</li>
+  </ol>
+
+  <!-- ─────────────────────────── S16 ─────────────────────────── -->
+  <h1 id="s16">16. Key Algorithms</h1>
+
+  <h2>16.1 Transaction balance delta</h2>
+  <pre><code>computeBalanceDelta(t):
+  expense       → { accountId: t.account_id,  delta: -t.amount }
+  income        → { accountId: t.account_id,  delta: +t.amount }
+  transfer      → { accountId: t.account_id,  delta: -t.amount,
+                    toAccountId: t.to_account_id, toDelta: +t.to_amount }
+  debt_lent     → t.debt_ref_id != '' ? delta: +t.amount   // repayment received
+                                       : delta: -t.amount  // lent out
+  debt_borrowed → t.debt_ref_id != '' ? delta: -t.amount   // repayment made
+                                       : delta: +t.amount  // received
+
+On update: reverse old delta, then apply new delta.
+On delete: reverse old delta only.</code></pre>
+
+  <h2>16.2 Queue deduplication</h2>
+  <pre><code>Input: items[] sorted by createdAt ASC
+
+latestMap = Map&lt;key, item&gt;
+  key = "${entityType}:${entityId}:${operationType}"
+
+for each item:
+  if !latestMap.has(key) OR item.createdAt > latestMap.get(key).createdAt:
+    latestMap.set(key, item)
+
+latestIds = Set(latestMap.values().map(i => i.localId))
+
+// Superseded items: delete from queue without API call
+for each item NOT in latestIds: markDone(item.localId)
+
+// Process remaining
+for each item in latestMap.values():
+  markProcessing → processQueueItem → markDone | markFailed(retryCount+1)</code></pre>
+
+  <h2>16.3 Date-group label</h2>
+  <pre><code>formatGroupLabel(date: string):
+  d = parseISO(date)
+  if getYear(d) === getYear(new Date()):
+    datePart = format(d, 'dd MMM')         // "14 Jun"
+  else:
+    datePart = format(d, 'dd MMM yyyy')    // "14 Jun 2023"
+  return datePart + ' · ' + format(d, 'EEEE')  // "14 Jun · Saturday"</code></pre>
+
+  <h2>16.4 generateId</h2>
+  <pre><code>generateId(prefix):
+  return prefix + '_' + crypto.randomUUID().replace(/-/g, '').slice(0, 8)
+  // e.g. generateId('txn') → 'txn_a1b2c3d4'</code></pre>
+
+  <h2>16.5 convertToBase</h2>
+  <pre><code>convertToBase(amount, currency, baseCurrency, rates):
+  if currency === baseCurrency: return amount
+  rate = rates[currency]         // 1 baseCurrency = rate foreignCurrency
+  if !rate: return amount        // fallback: 1:1
+  return amount / rate           // converts foreign → base</code></pre>
+
+  <h2>16.6 Multi-category toggle</h2>
+  <pre><code>toggle(id):
+  cur = current category_ids[]
+  idx = cur.indexOf(id)
+  if idx === -1:
+    if cur.length &lt; 2: onChange([...cur, id])   // append (max 2)
+    else:              onChange([cur[0], id])   // replace second
+  else:
+    onChange(cur.filter(c => c !== id))         // deselect
+
+// cur[0] = primary (analytics, donut chart)
+// cur[1] = tag only</code></pre>
+
+  <h2>16.7 Category delete with transfer</h2>
+  <pre><code>deleteCategory(id, transferToId):
+  txns = db.transactions.where('category_ids').equals(id).toArray()
+  for each txn:
+    newIds = txn.category_ids
+      .map(cId => cId === id ? transferToId : cId)
+      .filter((cId, i, arr) => Boolean(cId) && arr.indexOf(cId) === i)  // dedup
+    update txn in db + enqueue update
+  db.categories.delete(id)
+  setState(categories.filter(c => c.id !== id))
+
+// Dedup prevents a transaction having the same category ID twice
+// if both the deleted and transfer-target categories were already present.</code></pre>
+
+</div>
+</body>
+</html>
