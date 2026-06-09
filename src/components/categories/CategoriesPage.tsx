@@ -19,39 +19,37 @@ import type { Category } from '@/types/category'
 
 type ActiveTab = 'expenses' | 'income'
 
-// ── Amount cell ────────────────────────────────────────────────────────────────
+// ── Amount column — mirrors AccountRow layout ──────────────────────────────────
 
-function AmountCell({ amount, limit, currency, isExpense }: {
+function CategoryAmount({ amount, limit, currency, isExpense }: {
   amount: number; limit: number; currency: string; isExpense: boolean
 }) {
-  if (isExpense && limit > 0) {
-    const pct = Math.min(amount / limit, 1)
-    const over = amount > limit
-    return (
-      <div className="w-24 shrink-0 text-right">
-        <p className={`font-medium ${over ? 'text-red-400' : 'text-foreground'}`}>
-          {formatAmount(amount, currency)}
-        </p>
-        <div className="mt-0.5 h-1 rounded-full bg-muted overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${over ? 'bg-red-400' : 'bg-green-400'}`}
-            style={{ width: `${pct * 100}%` }}
-          />
-        </div>
-        <p className="text-sm text-muted-foreground">{formatAmount(limit, currency)}</p>
-      </div>
-    )
-  }
-  if (amount > 0) {
-    return (
-      <div className="w-24 shrink-0 text-right">
-        <p className={`font-medium ${isExpense ? 'text-red-400' : 'text-green-400'}`}>
-          {formatAmount(amount, currency)}
-        </p>
-      </div>
-    )
-  }
-  return <div className="w-24 shrink-0" />
+  const color = amount === 0
+    ? 'text-muted-foreground'
+    : isExpense && limit > 0 && amount > limit
+      ? 'text-red-400'
+      : isExpense
+        ? 'text-foreground'
+        : 'text-green-400'
+
+  return (
+    <div className="text-right shrink-0">
+      <p className={`font-medium ${color}`}>
+        {amount > 0 ? formatAmount(amount, currency) : '—'}
+      </p>
+      {isExpense && limit > 0 && (
+        <>
+          <div className="mt-0.5 h-1 w-20 rounded-full bg-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${amount > limit ? 'bg-red-400' : 'bg-green-400'}`}
+              style={{ width: `${Math.min(amount / limit, 1) * 100}%` }}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">{formatAmount(limit, currency)}</p>
+        </>
+      )}
+    </div>
+  )
 }
 
 // ── Sortable row ───────────────────────────────────────────────────────────────
@@ -64,33 +62,34 @@ function SortableCategory({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
-  const isExpense = activeTab === 'expenses'
 
   return (
     <button
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2.5 border-b last:border-0 bg-background w-full text-left hover:bg-accent transition-colors"
+      className="flex items-center gap-3 px-3 py-3 border-b last:border-0 bg-background w-full text-left hover:bg-accent transition-colors"
     >
       <span
         {...attributes}
         {...listeners}
         onClick={e => e.stopPropagation()}
-        className="text-muted-foreground cursor-grab active:cursor-grabbing touch-none p-0.5 -ml-0.5 shrink-0"
+        className="text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
       >
         <GripVertical size={14} />
       </span>
 
       <CategoryIcon icon={category.icon} color={category.color} size={28} />
 
-      <span className="flex-1 font-medium truncate min-w-0">{category.name}</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">{category.name}</p>
+      </div>
 
-      <AmountCell
+      <CategoryAmount
         amount={amount}
-        limit={isExpense ? category.expense_limit : 0}
+        limit={activeTab === 'expenses' ? category.expense_limit : 0}
         currency={currency}
-        isExpense={isExpense}
+        isExpense={activeTab === 'expenses'}
       />
     </button>
   )
@@ -146,34 +145,36 @@ export function CategoriesPage() {
     await reorder(newOrder.map(c => c.id))
   }
 
-  const totalActive = activeTab === 'expenses' ? totalExpenses : totalIncome
-
   return (
     <div className="flex flex-col h-full">
-      {/* Toggle tabs */}
-      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+      {/* Toggle tabs — both totals always visible */}
+      <div className="flex items-center px-4 py-3 border-b shrink-0">
         <div
-          className="flex rounded-lg p-1 gap-1"
+          className="flex rounded-lg p-1 gap-1 w-full"
           style={{ background: 'var(--surface-2, hsl(var(--muted)))' }}
         >
-          {(['expenses', 'income'] as ActiveTab[]).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                activeTab === tab
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <span className="capitalize">{tab}</span>
-              {activeTab === tab && totalActive > 0 && (
-                <span className={`text-sm font-bold ${tab === 'expenses' ? 'text-red-400' : 'text-green-400'}`}>
-                  {formatAmount(totalActive, baseCurrency)}
-                </span>
-              )}
-            </button>
-          ))}
+          {(['expenses', 'income'] as ActiveTab[]).map(tab => {
+            const total = tab === 'expenses' ? totalExpenses : totalIncome
+            const isActive = activeTab === tab
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span className="capitalize">{tab}</span>
+                {total > 0 && (
+                  <span className={`font-bold ${tab === 'expenses' ? 'text-red-400' : 'text-green-400'}`}>
+                    {formatAmount(total, baseCurrency)}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
 

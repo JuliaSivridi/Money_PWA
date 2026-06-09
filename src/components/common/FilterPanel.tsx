@@ -125,7 +125,7 @@ export function FilterPanel({ open, onClose }: Props) {
           {/* Accounts */}
           <section>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Accounts</p>
-            <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto pr-1">
+            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
               {activeAccounts.map(a => (
                 <Chip key={a.id} active={filterState.accountIds.includes(a.id)} onClick={() => toggleAccount(a.id)}>
                   <span className="inline-flex items-center gap-1.5">
@@ -160,14 +160,14 @@ export function FilterPanel({ open, onClose }: Props) {
                 type="date"
                 value={filterState.dateFrom}
                 onChange={e => setFilter({ dateFrom: e.target.value })}
-                className="flex-1 text-sm border border-primary rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
               />
               <span className="text-muted-foreground">–</span>
               <input
                 type="date"
                 value={filterState.dateTo}
                 onChange={e => setFilter({ dateTo: e.target.value })}
-                className="flex-1 text-sm border border-primary rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
               />
             </div>
           </section>
