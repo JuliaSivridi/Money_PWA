@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Tag, GripVertical, TrendingDown, TrendingUp } from 'lucide-react'
+import { Plus, Tag, GripVertical } from 'lucide-react'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -17,17 +17,31 @@ import { usePrefsStore } from '@/store/prefsStore'
 import { todayISO } from '@/utils/dateUtils'
 import type { Category } from '@/types/category'
 
-// ── Budget cell ────────────────────────────────────────────────────────────────
+// ── Income cell (no limit, just amount) ───────────────────────────────────────
 
-function BudgetCell({ spent, limit, currency, active }: {
+function IncomeCell({ earned, currency, active }: { earned: number; currency: string; active: boolean }) {
+  if (!active) return <div className="w-20 shrink-0" />
+  if (earned > 0) {
+    return (
+      <div className="w-20 shrink-0 text-right">
+        <p className="text-xs font-medium text-green-400">{formatAmount(earned, currency)}</p>
+      </div>
+    )
+  }
+  return <div className="w-20 shrink-0" />
+}
+
+// ── Expense cell (with optional limit + progress bar) ─────────────────────────
+
+function ExpenseCell({ spent, limit, currency, active }: {
   spent: number; limit: number; currency: string; active: boolean
 }) {
-  if (!active) return <div className="w-24" />
+  if (!active) return <div className="w-20 shrink-0" />
   if (limit > 0) {
     const pct = Math.min(spent / limit, 1)
     const over = spent > limit
     return (
-      <div className="w-24 shrink-0 text-right">
+      <div className="w-20 shrink-0 text-right">
         <p className={`text-xs font-medium ${over ? 'text-red-400' : 'text-foreground'}`}>
           {formatAmount(spent, currency)}
         </p>
@@ -43,18 +57,12 @@ function BudgetCell({ spent, limit, currency, active }: {
   }
   if (spent > 0) {
     return (
-      <div className="w-24 shrink-0 text-right">
+      <div className="w-20 shrink-0 text-right">
         <p className="text-xs text-muted-foreground">{formatAmount(spent, currency)}</p>
       </div>
     )
   }
-  return <div className="w-24 shrink-0" />
-}
-
-// ── Column header ──────────────────────────────────────────────────────────────
-
-function ColHeader({ children }: { children: React.ReactNode }) {
-  return <div className="w-24 shrink-0 text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{children}</div>
+  return <div className="w-20 shrink-0" />
 }
 
 // ── Sortable row ───────────────────────────────────────────────────────────────
@@ -62,7 +70,7 @@ function ColHeader({ children }: { children: React.ReactNode }) {
 function SortableCategory({
   category, onClick, expenseSpent, incomeEarned, currency,
 }: {
-  category: Category; onClick: () => void
+  category: Category; onClick: () => void;
   expenseSpent: number; incomeEarned: number; currency: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id })
@@ -88,18 +96,8 @@ function SortableCategory({
 
       <span className="flex-1 font-medium truncate min-w-0 text-sm">{category.name}</span>
 
-      <BudgetCell
-        spent={expenseSpent}
-        limit={category.expense_limit}
-        currency={currency}
-        active={category.is_expense}
-      />
-      <BudgetCell
-        spent={incomeEarned}
-        limit={category.income_limit}
-        currency={currency}
-        active={category.is_income}
-      />
+      <IncomeCell earned={incomeEarned} currency={currency} active={category.is_income} />
+      <ExpenseCell spent={expenseSpent} limit={category.expense_limit} currency={currency} active={category.is_expense} />
     </button>
   )
 }
@@ -152,32 +150,22 @@ export function CategoriesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Monthly summary */}
-      <div className="flex gap-px border-b shrink-0">
-        <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-rose-500/5">
-          <TrendingDown size={14} className="text-red-400 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses this month</p>
-            <p className="text-sm font-semibold text-red-400">{formatAmount(totalExpenses, baseCurrency)}</p>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-emerald-500/5">
-          <TrendingUp size={14} className="text-green-400 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income this month</p>
-            <p className="text-sm font-semibold text-green-400">{formatAmount(totalIncome, baseCurrency)}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Column headers */}
+      {/* Column headers + monthly totals — aligned above data columns */}
       {categories.length > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-muted/20 shrink-0">
-          <div className="w-4 shrink-0" />{/* grip placeholder */}
-          <div className="w-10 shrink-0" />{/* icon placeholder */}
+        <div className="flex items-end gap-2 px-3 py-2 border-b bg-muted/20 shrink-0">
+          <div className="w-4 shrink-0" />{/* grip */}
+          <div className="w-10 shrink-0" />{/* icon */}
           <div className="flex-1" />
-          <ColHeader>Expense</ColHeader>
-          <ColHeader>Income</ColHeader>
+          {/* Income column header */}
+          <div className="w-20 shrink-0 text-right">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Income</p>
+            <p className="text-xs font-bold text-green-400">{formatAmount(totalIncome, baseCurrency)}</p>
+          </div>
+          {/* Expense column header */}
+          <div className="w-20 shrink-0 text-right">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Expenses</p>
+            <p className="text-xs font-bold text-red-400">{formatAmount(totalExpenses, baseCurrency)}</p>
+          </div>
         </div>
       )}
 
