@@ -25,22 +25,36 @@ function isoToDisplay(iso: string) {
   return `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`
 }
 
-// ─── AmountInput ──────────────────────────────────────────────────────────────
+// ─── AmountField — tappable display, highlights when active ──────────────────
 
-export function AmountInput({ value, onChange, placeholder = '0.00' }: {
-  value: string; onChange: (v: string) => void; placeholder?: string; autoOpen?: boolean
+export function AmountInput({ value, placeholder = '0.00' }: {
+  value: string; onChange?: (v: string) => void; placeholder?: string; autoOpen?: boolean
 }) {
   return (
-    <div>
-      <div className={cn(
-        'w-full px-3 py-2 border border-input rounded-md bg-background text-foreground select-none',
+    <div className={cn(
+      'w-full px-3 py-2 border border-input rounded-md bg-background text-foreground select-none',
+      !value && 'text-muted-foreground',
+    )}>
+      {value || placeholder}
+    </div>
+  )
+}
+
+function AmountField({ value, active, onActivate, placeholder }: {
+  value: string; active: boolean; onActivate: () => void; placeholder: string
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onActivate}
+      className={cn(
+        'w-full px-3 py-2 border rounded-md bg-background text-foreground cursor-pointer select-none',
+        active ? 'border-ring ring-2 ring-ring' : 'border-input',
         !value && 'text-muted-foreground',
-      )}>
-        {value || placeholder}
-      </div>
-      <div className="mt-1 rounded-md overflow-hidden border border-border">
-        <NumericKeyboard value={value} onChange={onChange} />
-      </div>
+      )}
+    >
+      {value || placeholder}
     </div>
   )
 }
@@ -81,6 +95,7 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 type TabType = 'expense' | 'income' | 'transfer' | 'debt'
+type ActiveField = 'amount' | 'to_amount'
 
 interface Props {
   open: boolean
@@ -97,6 +112,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
   const { baseCurrency } = usePrefsStore()
 
   const [tab, setTab] = useState<TabType>('expense')
+  const [activeField, setActiveField] = useState<ActiveField>('amount')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -110,6 +126,9 @@ export function TransactionModal({ open, editing, onClose }: Props) {
       date: todayISO(), comment: '', debt_subtype: 'lent', debt_ref_id: '',
     },
   })
+
+  // Reset active field when tab changes
+  useEffect(() => { setActiveField('amount') }, [tab])
 
   // Auto-fill currency from selected account
   const watchAccountId = watch('account_id')
@@ -206,13 +225,21 @@ export function TransactionModal({ open, editing, onClose }: Props) {
     onClose()
   }
 
+  const watchAmount = watch('amount')
+  const watchToAmount = watch('to_amount')
   const watchCurrency = watch('currency')
   const watchToCurrency = watch('to_currency')
+
+  const crossCurrency = tab === 'transfer' && watchToCurrency !== watchCurrency
+
+  // Shared keyboard value / handler
+  const kbValue = activeField === 'to_amount' ? watchToAmount : watchAmount
+  const kbOnChange = (v: string) => setValue(activeField, v)
 
   const inputCls = 'w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   const categoryGrid = (cats: typeof sortedExpense) => (
-    <div className="max-h-44 overflow-y-auto rounded-md">
+    <div className="max-h-36 overflow-y-auto rounded-md">
       <div className="grid grid-cols-4 gap-2">
         {cats.map(cat => (
           <Controller key={cat.id} name="category_id" control={control} render={({ field }) => (
@@ -254,9 +281,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
 
             {/* ── EXPENSE ── */}
             <TabsContent value="expense" className="space-y-3 mt-4">
-              <Controller name="amount" control={control} render={({ field }) => (
-                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} autoOpen />
-              )} />
+              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
               {errors.amount && <p className="text-destructive text-xs -mt-2">Required</p>}
               {categoryGrid(sortedExpense)}
               {accountSelect('account_id', 'Account')}
@@ -271,9 +296,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
 
             {/* ── INCOME ── */}
             <TabsContent value="income" className="space-y-3 mt-4">
-              <Controller name="amount" control={control} render={({ field }) => (
-                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} />
-              )} />
+              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
               {errors.amount && <p className="text-destructive text-xs -mt-2">Required</p>}
               {categoryGrid(sortedIncome)}
               {accountSelect('account_id', 'Account')}
@@ -288,14 +311,10 @@ export function TransactionModal({ open, editing, onClose }: Props) {
             {/* ── TRANSFER ── */}
             <TabsContent value="transfer" className="space-y-3 mt-4">
               {accountSelect('account_id', 'From account')}
-              <Controller name="amount" control={control} render={({ field }) => (
-                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} />
-              )} />
+              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
               {accountSelect('to_account_id', 'To account')}
-              {watchToCurrency !== watchCurrency && (
-                <Controller name="to_amount" control={control} render={({ field }) => (
-                  <AmountInput value={field.value} onChange={field.onChange} placeholder={`Received amount (${watchToCurrency})`} />
-                )} />
+              {crossCurrency && (
+                <AmountField value={watchToAmount} active={activeField === 'to_amount'} onActivate={() => setActiveField('to_amount')} placeholder={`Received (${watchToCurrency})`} />
               )}
               <Controller name="date" control={control} render={({ field }) => (
                 <DateInput value={field.value} onChange={field.onChange} />
@@ -317,9 +336,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                   ))}
                 </div>
               )} />
-              <Controller name="amount" control={control} render={({ field }) => (
-                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} />
-              )} />
+              <AmountField value={watchAmount} active={activeField === 'amount'} onActivate={() => setActiveField('amount')} placeholder={`0.00 ${watchCurrency}`} />
               {accountSelect('account_id', 'Account')}
               <Controller name="date" control={control} render={({ field }) => (
                 <DateInput value={field.value} onChange={field.onChange} />
@@ -340,6 +357,11 @@ export function TransactionModal({ open, editing, onClose }: Props) {
               )}
             </TabsContent>
           </Tabs>
+
+          {/* ── Shared keyboard ── */}
+          <div className="rounded-md overflow-hidden border border-border">
+            <NumericKeyboard value={kbValue} onChange={kbOnChange} />
+          </div>
 
           <DialogFooter className="flex-row items-center">
             {editing && (
