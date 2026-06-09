@@ -20,7 +20,9 @@ export function CategoryDonut({ month }: Props) {
     const expenses = transactions.filter(t => t.type === 'expense' && t.date.startsWith(month))
     const byCategory = new Map<string, number>()
     for (const t of expenses) {
-      byCategory.set(t.category_id, (byCategory.get(t.category_id) ?? 0) + t.amount_base)
+      // Use primary category (first in array) for analytics totals — avoids double-counting
+      const primaryId = t.category_ids[0]
+      if (primaryId) byCategory.set(primaryId, (byCategory.get(primaryId) ?? 0) + t.amount_base)
     }
     const total = Array.from(byCategory.values()).reduce((s, v) => s + v, 0)
     const data = categories

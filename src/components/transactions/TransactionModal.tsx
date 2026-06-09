@@ -83,7 +83,7 @@ export function DateInput({ value, onChange }: { value: string; onChange: (v: st
 const schema = z.object({
   amount: z.string().min(1),
   currency: z.string(),
-  category_id: z.string(),
+  category_ids: z.array(z.string()),
   account_id: z.string().min(1, 'Select account'),
   to_account_id: z.string(),
   to_amount: z.string(),
@@ -121,7 +121,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
   const { handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      amount: '', currency: baseCurrency, category_id: '',
+      amount: '', currency: baseCurrency, category_ids: [],
       account_id: '', to_account_id: '', to_amount: '', to_currency: baseCurrency,
       date: todayISO(), comment: '', debt_subtype: 'lent', debt_ref_id: '',
     },
@@ -154,7 +154,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
       setTab(tabType)
       reset({
         amount: String(editing.amount), currency: editing.currency,
-        category_id: editing.category_id, account_id: editing.account_id,
+        category_ids: editing.category_ids, account_id: editing.account_id,
         to_account_id: editing.to_account_id,
         to_amount: editing.to_amount ? String(editing.to_amount) : '',
         to_currency: editing.to_currency || baseCurrency,
@@ -165,7 +165,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
     } else {
       setTab('expense')
       reset({
-        amount: '', currency: baseCurrency, category_id: '',
+        amount: '', currency: baseCurrency, category_ids: [],
         account_id: defaultAccountId,
         to_account_id: '', to_amount: '', to_currency: baseCurrency,
         date: todayISO(), comment: '', debt_subtype: 'lent', debt_ref_id: '',
@@ -176,7 +176,9 @@ export function TransactionModal({ open, editing, onClose }: Props) {
   const categoryUsage = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const t of transactions) {
-      if (t.category_id) counts[t.category_id] = (counts[t.category_id] ?? 0) + 1
+      for (const id of t.category_ids) {
+        counts[id] = (counts[id] ?? 0) + 1
+      }
     }
     return counts
   }, [transactions])
@@ -204,7 +206,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
         amount: parseFloat(values.amount) || 0,
         currency: values.currency, amount_base: 0,
         account_id: values.account_id,
-        category_id: tab === 'transfer' || tab === 'debt' ? '' : values.category_id,
+        category_ids: tab === 'transfer' || tab === 'debt' ? [] : values.category_ids,
         to_account_id: tab === 'transfer' ? values.to_account_id : '',
         to_amount: tab === 'transfer' ? (parseFloat(values.to_amount) || parseFloat(values.amount) || 0) : 0,
         to_currency: tab === 'transfer' ? values.to_currency : '',
@@ -239,19 +241,47 @@ export function TransactionModal({ open, editing, onClose }: Props) {
   const inputCls = 'w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   const categoryGrid = (cats: typeof sortedExpense) => (
-    <div className="max-h-36 overflow-y-auto rounded-md">
-      <div className="grid grid-cols-4 gap-2">
-        {cats.map(cat => (
-          <Controller key={cat.id} name="category_id" control={control} render={({ field }) => (
-            <button type="button" onClick={() => field.onChange(cat.id)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors ${field.value === cat.id ? 'border-primary bg-accent' : 'border-border hover:bg-accent'}`}>
-              <CategoryIcon icon={cat.icon} color={cat.color} size={16} />
-              <span className="text-xs truncate w-full text-center">{cat.name}</span>
-            </button>
-          )} />
-        ))}
-      </div>
-    </div>
+    <Controller name="category_ids" control={control} render={({ field }) => {
+      const toggle = (id: string) => {
+        const cur = field.value as string[]
+        const idx = cur.indexOf(id)
+        if (idx === -1) {
+          // max 2 categories; if already 2, replace the second
+          field.onChange(cur.length < 2 ? [...cur, id] : [cur[0], id])
+        } else {
+          field.onChange(cur.filter(c => c !== id))
+        }
+      }
+      return (
+        <div className="max-h-36 overflow-y-auto rounded-md">
+          <div className="grid grid-cols-4 gap-2">
+            {cats.map(cat => {
+              const pos = (field.value as string[]).indexOf(cat.id)
+              const selected = pos !== -1
+              const isPrimary = pos === 0
+              return (
+                <button key={cat.id} type="button" onClick={() => toggle(cat.id)}
+                  className={cn(
+                    'relative flex flex-col items-center gap-1 p-2 rounded-md border transition-colors',
+                    selected ? 'border-primary bg-accent' : 'border-border hover:bg-accent'
+                  )}>
+                  <CategoryIcon icon={cat.icon} color={cat.color} size={16} />
+                  <span className="text-xs truncate w-full text-center">{cat.name}</span>
+                  {selected && (
+                    <span className={cn(
+                      'absolute top-1 right-1 w-3.5 h-3.5 rounded-full text-[9px] font-bold flex items-center justify-center',
+                      isPrimary ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/60 text-background'
+                    )}>
+                      {pos + 1}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )
+    }} />
   )
 
   const accountSelect = (name: 'account_id' | 'to_account_id', placeholder: string) => (
@@ -359,7 +389,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
                   await addTransaction({
                     date: todayISO(), type: editing.type, amount: editing.amount,
                     currency: editing.currency, amount_base: 0, account_id: editing.account_id,
-                    category_id: '', to_account_id: '', to_amount: 0, to_currency: '',
+                    category_ids: [], to_account_id: '', to_amount: 0, to_currency: '',
                     debt_ref_id: editing.id, comment: editing.comment,
                   })
                   onClose()

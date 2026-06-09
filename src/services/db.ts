@@ -15,12 +15,28 @@ export class MoneyDB extends Dexie {
     // when upgrading from v1 (++localId) to v2 (id). Old MoneyDB is abandoned;
     // data re-syncs from Sheets automatically.
     super('MoneyDB2')
+    // v1: single category_id string
     this.version(1).stores({
       transactions: 'id, date, type, account_id, category_id, updated_at',
       accounts:     'id, type, archived, updated_at',
       categories:   'id, sort_order, updated_at',
       queue:        '++localId, status, entityType, entityId, createdAt',
     })
+    // v2: multi-category — category_id → category_ids (string[]), multiEntry index
+    this.version(2).stores({
+      transactions: 'id, date, type, account_id, *category_ids, updated_at',
+      accounts:     'id, type, archived, updated_at',
+      categories:   'id, sort_order, updated_at',
+      queue:        '++localId, status, entityType, entityId, createdAt',
+    }).upgrade(tx =>
+      tx.table('transactions').toCollection().modify((t: Record<string, unknown>) => {
+        if (!Array.isArray(t['category_ids'])) {
+          const old = typeof t['category_id'] === 'string' ? t['category_id'] : ''
+          t['category_ids'] = old ? [old] : []
+          delete t['category_id']
+        }
+      })
+    )
   }
 }
 

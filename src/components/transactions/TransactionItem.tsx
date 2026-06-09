@@ -15,7 +15,8 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
   const { categories } = useCategoriesStore()
   const { accounts } = useAccountsStore()
 
-  const category = categories.find(c => c.id === t.category_id)
+  const txnCategories = t.category_ids.map(id => categories.find(c => c.id === id)).filter(Boolean)
+  const primaryCategory = txnCategories[0]
   const account = accounts.find(a => a.id === t.account_id)
   const toAccount = accounts.find(a => a.id === t.to_account_id)
 
@@ -30,13 +31,23 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
       onClick={onClick}
       className="flex items-center gap-3 w-full px-4 py-3 hover:bg-accent transition-colors text-left"
     >
-      {/* Icon */}
+      {/* Icon(s) */}
       {isTransfer ? (
         <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
           <Redo2 className="w-4 h-4 text-muted-foreground" />
         </div>
-      ) : category ? (
-        <CategoryIcon icon={category.icon} color={category.color} />
+      ) : txnCategories.length > 1 ? (
+        // Stacked icons — second slightly offset behind first
+        <div className="relative flex-shrink-0 w-7 h-7">
+          <div className="absolute top-0 left-0 translate-x-2 translate-y-1 opacity-70">
+            <CategoryIcon icon={txnCategories[1]!.icon} color={txnCategories[1]!.color} size={20} />
+          </div>
+          <div className="absolute top-0 left-0">
+            <CategoryIcon icon={txnCategories[0]!.icon} color={txnCategories[0]!.color} size={24} />
+          </div>
+        </div>
+      ) : primaryCategory ? (
+        <CategoryIcon icon={primaryCategory.icon} color={primaryCategory.color} />
       ) : (
         <div className="w-7 h-7 rounded-full bg-muted flex-shrink-0" />
       )}
@@ -44,7 +55,7 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
       {/* Name + account lines */}
       <div className="flex-1 min-w-0">
         <p className="truncate">
-          {isTransfer ? (toAccount?.name ?? '?') : (category?.name ?? t.comment ?? t.type)}
+          {isTransfer ? (toAccount?.name ?? '?') : (primaryCategory?.name ?? t.comment ?? t.type)}
         </p>
         <p className="text-muted-foreground text-xs truncate">
           {account?.name ?? ''}

@@ -14,7 +14,7 @@ export async function seedOnboarding(): Promise<void> {
 
   const txnHeader = [
     'id','date','type','amount','currency','amount_base',
-    'account_id','category_id','to_account_id','to_amount','to_currency',
+    'account_id','category_ids','to_account_id','to_amount','to_currency',
     'debt_ref_id','comment','created_at','updated_at',
   ]
   const accHeader = ['id','name','currency','type','balance','archived','sort_order','created_at','updated_at']

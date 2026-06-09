@@ -39,10 +39,13 @@ export const useCategoriesStore = create<CategoriesState>((set, get) => ({
   },
 
   deleteCategory: async (id, transferToId) => {
-    // reassign all transactions with this category_id
-    const txns = await db.transactions.where('category_id').equals(id).toArray()
+    // reassign all transactions that include this category
+    const txns = await db.transactions.where('category_ids').equals(id).toArray()
     for (const t of txns) {
-      const updated = { ...t, category_id: transferToId, updated_at: now() }
+      const newIds = t.category_ids
+        .map(cId => cId === id ? transferToId : cId)
+        .filter((cId, i, arr) => Boolean(cId) && arr.indexOf(cId) === i)
+      const updated = { ...t, category_ids: newIds, updated_at: now() }
       await db.transactions.where('id').equals(t.id).modify(updated)
       await enqueue('transaction', 'update', t.id, updated as unknown as Record<string, unknown>)
     }

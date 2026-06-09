@@ -73,7 +73,7 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const amount_base = convertToBase(merged.amount, merged.currency, base, rates)
     const updated: Transaction = { ...merged, amount_base, updated_at: now() }
 
-    await db.transactions.where('id').equals(id).modify(updated)
+    await db.transactions.where('id').equals(id).modify(t => { Object.assign(t, updated) })
     await enqueue('transaction', 'update', id, updated as unknown as Record<string, unknown>)
     set((s) => ({ transactions: s.transactions.map(t => t.id === id ? updated : t) }))
 

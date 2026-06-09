@@ -18,7 +18,7 @@ export function rowToTransaction(row: string[]): Transaction {
     currency:      cell(row, TRANSACTION_COLS.CURRENCY) || 'EUR',
     amount_base:   Number(cell(row, TRANSACTION_COLS.AMOUNT_BASE)) || 0,
     account_id:    cell(row, TRANSACTION_COLS.ACCOUNT_ID),
-    category_id:   cell(row, TRANSACTION_COLS.CATEGORY_ID),
+    category_ids:  cell(row, TRANSACTION_COLS.CATEGORY_IDS).split(',').map(s => s.trim()).filter(Boolean),
     to_account_id: cell(row, TRANSACTION_COLS.TO_ACCOUNT_ID),
     to_amount:     Number(cell(row, TRANSACTION_COLS.TO_AMOUNT)) || 0,
     to_currency:   cell(row, TRANSACTION_COLS.TO_CURRENCY),
@@ -38,7 +38,7 @@ export function transactionToRow(t: Transaction): string[] {
   row[TRANSACTION_COLS.CURRENCY]      = t.currency
   row[TRANSACTION_COLS.AMOUNT_BASE]   = String(t.amount_base)
   row[TRANSACTION_COLS.ACCOUNT_ID]    = t.account_id
-  row[TRANSACTION_COLS.CATEGORY_ID]   = t.category_id
+  row[TRANSACTION_COLS.CATEGORY_IDS]  = t.category_ids.join(',')
   row[TRANSACTION_COLS.TO_ACCOUNT_ID] = t.to_account_id
   row[TRANSACTION_COLS.TO_AMOUNT]     = String(t.to_amount)
   row[TRANSACTION_COLS.TO_CURRENCY]   = t.to_currency

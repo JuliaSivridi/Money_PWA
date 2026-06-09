@@ -14,7 +14,7 @@ export interface Transaction {
   currency: string
   amount_base: number
   account_id: string
-  category_id: string
+  category_ids: string[]
   to_account_id: string
   to_amount: number
   to_currency: string
