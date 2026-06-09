@@ -98,9 +98,17 @@ for (const [name, { real, currency }] of Object.entries(REAL)) {
   acc.balance = real.toFixed(2)
 }
 
+// ── Set balance for accounts NOT in REAL map = net from transactions ──────────
+console.log('\nNet balances (no correction needed):')
+for (const a of accounts) {
+  if (REAL[a.name] !== undefined) continue  // already handled above
+  const calculated = Math.round((net[a.id] ?? 0) * 100) / 100
+  a.balance = calculated.toFixed(2)
+  console.log(`  ${a.name.padEnd(22)} net=${a.balance}`)
+}
+
 if (corrections.length === 0) {
-  console.log('  Nothing to correct!')
-  process.exit(0)
+  console.log('\n  (No correction transactions needed)')
 }
 
 // ── Append corrections to transactions.csv ───────────────────────────────────
