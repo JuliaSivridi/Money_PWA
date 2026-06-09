@@ -20,41 +20,6 @@ import type { Category } from '@/types/category'
 
 type ActiveTab = 'expenses' | 'income'
 
-// ── Amount column ─────────────────────────────────────────────────────────────
-
-function CategoryAmount({ amount, limit, currency, isExpense }: {
-  amount: number; limit: number; currency: string; isExpense: boolean
-}) {
-  if (isExpense && limit > 0) {
-    const over = amount > limit
-    return (
-      <div className="text-right shrink-0 min-w-0">
-        <p className={`font-medium ${over ? 'text-red-400' : 'text-foreground'}`}>
-          {formatAmount(amount, currency)}
-          <span className={`ml-1 text-sm ${over ? 'text-red-400' : 'text-green-400'}`}>
-            {over ? '✕' : '✓'}
-          </span>
-          <span className="text-muted-foreground font-normal text-sm"> {formatAmount(limit, currency)}</span>
-        </p>
-        <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${over ? 'bg-red-400' : 'bg-green-400'}`}
-            style={{ width: `${Math.min(amount / limit, 1) * 100}%` }}
-          />
-        </div>
-      </div>
-    )
-  }
-  if (amount > 0) {
-    return (
-      <p className={`font-medium shrink-0 ${isExpense ? 'text-foreground' : 'text-green-400'}`}>
-        {formatAmount(amount, currency)}
-      </p>
-    )
-  }
-  return null
-}
-
 // ── Sortable row ───────────────────────────────────────────────────────────────
 
 function SortableCategory({
@@ -66,34 +31,55 @@ function SortableCategory({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
+  const isExpense = activeTab === 'expenses'
+  const limit = isExpense ? category.expense_limit : 0
+  const hasLimit = limit > 0
+  const over = hasLimit && amount > limit
+  const pct = hasLimit ? Math.min(amount / limit, 1) : 0
+
   return (
     <button
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className="flex items-center gap-3 px-3 py-3 border-b last:border-0 bg-background w-full text-left hover:bg-accent transition-colors"
+      className="flex flex-col w-full px-3 py-3 border-b last:border-0 bg-background text-left hover:bg-accent transition-colors gap-1"
     >
-      <span
-        {...attributes}
-        {...listeners}
-        onClick={e => e.stopPropagation()}
-        className="text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
-      >
-        <GripVertical size={14} />
-      </span>
+      {/* Main row */}
+      <div className="flex items-center gap-3 w-full">
+        <span
+          {...attributes}
+          {...listeners}
+          onClick={e => e.stopPropagation()}
+          className="text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
+        >
+          <GripVertical size={14} />
+        </span>
 
-      <CategoryIcon icon={category.icon} color={category.color} size={28} />
+        <CategoryIcon icon={category.icon} color={category.color} size={28} />
 
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{category.name}</p>
+        <span className="flex-1 font-medium truncate min-w-0">{category.name}</span>
+
+        {amount > 0 && (
+          <span className={`font-medium shrink-0 ${over ? 'text-red-400' : isExpense ? 'text-foreground' : 'text-green-400'}`}>
+            {formatAmount(amount, currency)}
+          </span>
+        )}
+        {hasLimit && (
+          <span className={`text-sm shrink-0 ${over ? 'text-red-400' : 'text-green-400'}`}>
+            {over ? '✗' : '✓'} {formatAmount(limit, currency)}
+          </span>
+        )}
       </div>
 
-      <CategoryAmount
-        amount={amount}
-        limit={activeTab === 'expenses' ? category.expense_limit : 0}
-        currency={currency}
-        isExpense={activeTab === 'expenses'}
-      />
+      {/* Full-width progress bar — only when limit is set */}
+      {hasLimit && (
+        <div className="h-1 w-full rounded-full bg-muted overflow-hidden ml-1">
+          <div
+            className={`h-full rounded-full transition-all ${over ? 'bg-red-400' : 'bg-green-400'}`}
+            style={{ width: `${pct * 100}%` }}
+          />
+        </div>
+      )}
     </button>
   )
 }

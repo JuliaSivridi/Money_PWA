@@ -18,12 +18,14 @@ interface UIState {
   settingsOpen: boolean
   sidebarOpen: boolean
   filterState: FilterState
+  searchQuery: string
   analyticsMonth: string
   setView: (view: SelectedView) => void
   setSettingsOpen: (v: boolean) => void
   setSidebarOpen: (v: boolean) => void
   setFilter: (patch: Partial<FilterState>) => void
   clearFilters: () => void
+  setSearchQuery: (q: string) => void
   setAnalyticsMonth: (month: string) => void
 }
 
@@ -42,11 +44,13 @@ export const useUIStore = create<UIState>((set) => ({
   settingsOpen: false,
   sidebarOpen: false,
   filterState: emptyFilter,
+  searchQuery: '',
   analyticsMonth: currentMonthISO(),
   setView: (view) => set({ selectedView: view, sidebarOpen: false }),
   setSettingsOpen: (v) => set({ settingsOpen: v }),
   setSidebarOpen: (v) => set({ sidebarOpen: v }),
   setFilter: (patch) => set((s) => ({ filterState: { ...s.filterState, ...patch } })),
   clearFilters: () => set({ filterState: emptyFilter }),
+  setSearchQuery: (q) => set({ searchQuery: q }),
   setAnalyticsMonth: (month) => set({ analyticsMonth: month }),
 }))

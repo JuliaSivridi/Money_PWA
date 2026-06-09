@@ -48,9 +48,10 @@ export function useTransactionsByDate(): DateGroup[] {
   }, [transactions])
 }
 
-export function useFilteredTransactions(filterState: FilterState): Transaction[] {
+export function useFilteredTransactions(filterState: FilterState, searchQuery = ''): Transaction[] {
   const { transactions } = useTransactionsStore()
   return useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
     return transactions.filter(t => {
       if (filterState.accountIds.length > 0 && !filterState.accountIds.includes(t.account_id)) return false
       if (filterState.types.length > 0 && !filterState.types.includes(t.type)) return false
@@ -59,9 +60,10 @@ export function useFilteredTransactions(filterState: FilterState): Transaction[]
       if (filterState.dateTo && t.date > filterState.dateTo) return false
       if (filterState.amountMin !== '' && t.amount < Number(filterState.amountMin)) return false
       if (filterState.amountMax !== '' && t.amount > Number(filterState.amountMax)) return false
+      if (q && !t.comment?.toLowerCase().includes(q)) return false
       return true
     })
-  }, [transactions, filterState])
+  }, [transactions, filterState, searchQuery])
 }
 
 export function useTotalBalance(): number {

@@ -1,8 +1,16 @@
-import { X } from 'lucide-react'
 import { CategoryIcon } from './CategoryIcon'
 import { useUIStore } from '@/store/uiStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
+function getMonthRange(offset: 0 | -1): { from: string; to: string } {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + offset
+  const from = new Date(year, month, 1)
+  const to = new Date(year, month + 1, 0)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  return { from: fmt(from), to: fmt(to) }
+}
 
 interface Props {
   open: boolean
@@ -94,13 +102,9 @@ export function FilterPanel({ open, onClose }: Props) {
         }`}
         style={{ maxHeight: '80dvh', display: 'flex', flexDirection: 'column' }}
       >
-        {/* Handle + close */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-muted mx-auto absolute left-1/2 -translate-x-1/2 top-2" />
-          <div className="flex-1" />
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1">
-            <X size={18} />
-          </button>
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-2 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-muted" />
         </div>
 
         {/* Scrollable content */}
@@ -155,7 +159,7 @@ export function FilterPanel({ open, onClose }: Props) {
           {/* Date range */}
           <section>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Date range</p>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center mb-2">
               <input
                 type="date"
                 value={filterState.dateFrom}
@@ -169,6 +173,28 @@ export function FilterPanel({ open, onClose }: Props) {
                 onChange={e => setFilter({ dateTo: e.target.value })}
                 className="flex-1 text-sm border border-border rounded-lg px-3 py-2 bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
               />
+            </div>
+            {/* Quick presets */}
+            <div className="flex gap-2">
+              {([
+                { label: 'This month', offset: 0 as const },
+                { label: 'Last month', offset: -1 as const },
+              ]).map(({ label, offset }) => {
+                const range = getMonthRange(offset)
+                const active = filterState.dateFrom === range.from && filterState.dateTo === range.to
+                return (
+                  <Chip
+                    key={label}
+                    active={active}
+                    onClick={() => active
+                      ? setFilter({ dateFrom: '', dateTo: '' })
+                      : setFilter({ dateFrom: range.from, dateTo: range.to })
+                    }
+                  >
+                    {label}
+                  </Chip>
+                )
+              })}
             </div>
           </section>
 

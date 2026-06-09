@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Wallet, SlidersHorizontal } from 'lucide-react'
+import { Wallet, SlidersHorizontal, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FAB } from '@/components/common/FAB'
 import { FilterPanel } from '@/components/common/FilterPanel'
@@ -14,9 +14,9 @@ import type { Transaction } from '@/types/transaction'
 const PAGE_SIZE = 20
 
 export function TransactionList() {
-  const { filterState } = useUIStore()
+  const { filterState, searchQuery, setSearchQuery } = useUIStore()
   const allGroups = useTransactionsByDate()
-  const filtered = useFilteredTransactions(filterState)
+  const filtered = useFilteredTransactions(filterState, searchQuery)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editTx, setEditTx] = useState<Transaction | null>(null)
@@ -29,7 +29,9 @@ export function TransactionList() {
   const hasFilters = filterState.accountIds.length > 0 || filterState.types.length > 0 ||
     filterState.categoryIds.length > 0 || filterState.dateFrom || filterState.dateTo
 
-  const allDisplayGroups = hasFilters
+  const isFiltering = hasFilters || searchQuery.trim() !== ''
+
+  const allDisplayGroups = isFiltering
     ? (() => {
         const groups = new Map<string, typeof allGroups[0]>()
         for (const g of allGroups) {
@@ -41,7 +43,7 @@ export function TransactionList() {
     : allGroups
 
   // Reset visible count when filter/data changes
-  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [hasFilters, allGroups.length])
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [isFiltering, allGroups.length])
 
   const displayGroups = allDisplayGroups.slice(0, visibleCount)
   const hasMore = visibleCount < allDisplayGroups.length
@@ -64,8 +66,25 @@ export function TransactionList() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Filter chips + filter button */}
+      {/* Search + filter button */}
       <div className="flex items-center gap-2 px-3 py-2 border-b">
+        {/* Search field */}
+        <div className="flex-1 relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            type="search"
+            placeholder="Search by comment…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-8 py-1.5 text-sm rounded-full border border-border bg-background focus:outline-none focus:border-primary"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X size={13} />
+            </button>
+          )}
+        </div>
+        {/* Filters button */}
         <button
           onClick={() => setFilterOpen(true)}
           className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-full border text-sm font-medium transition-colors ${hasFilters ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
@@ -73,8 +92,13 @@ export function TransactionList() {
           <SlidersHorizontal size={13} />
           Filters
         </button>
-        <FilterBar filterState={filterState} inline />
       </div>
+      {/* Active filter chips */}
+      {hasFilters && (
+        <div className="px-3 py-1.5 border-b">
+          <FilterBar filterState={filterState} inline />
+        </div>
+      )}
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
