@@ -4,6 +4,7 @@ import { useAccountsStore } from '@/store/accountsStore'
 import { CategoryIcon } from '@/components/common/CategoryIcon'
 import { formatAmount } from '@/utils/currencyUtils'
 import type { Transaction } from '@/types/transaction'
+import { DEFAULT_ENTITY_COLOR } from '@/utils/design'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -67,7 +68,7 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
           {t.time && t.time !== '00:00' && (
             <span className="text-muted-foreground">{t.time} · </span>
           )}
-          <span style={{ color: account?.color || '#6b7280' }}>{account?.name ?? ''}</span>
+          <span style={{ color: account?.color || DEFAULT_ENTITY_COLOR }}>{account?.name ?? ''}</span>
         </p>
       </div>
 

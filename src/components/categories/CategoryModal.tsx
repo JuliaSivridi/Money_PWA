@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { DEFAULT_ENTITY_COLOR } from '@/utils/design'
 import { useForm, Controller } from 'react-hook-form'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -34,7 +35,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
   const [transferTo, setTransferTo] = useState('')
 
   const { register, handleSubmit, control, reset, watch, formState: { isSubmitting } } = useForm<FormValues>({
-    defaultValues: { name: '', icon: 'Tag', color: '#6b7280', is_expense: true, expense_limit: '', is_income: false, income_limit: '' },
+    defaultValues: { name: '', icon: 'Tag', color: DEFAULT_ENTITY_COLOR, is_expense: true, expense_limit: '', is_income: false, income_limit: '' },
   })
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export function CategoryModal({ open, editing, onClose }: Props) {
         is_income: editing.is_income, income_limit: editing.income_limit ? String(editing.income_limit) : '',
       })
     } else {
-      reset({ name: '', icon: 'Tag', color: '#6b7280', is_expense: true, expense_limit: '', is_income: false, income_limit: '' })
+      reset({ name: '', icon: 'Tag', color: DEFAULT_ENTITY_COLOR, is_expense: true, expense_limit: '', is_income: false, income_limit: '' })
     }
     setIconPickerOpen(false)
     setColorPickerOpen(false)

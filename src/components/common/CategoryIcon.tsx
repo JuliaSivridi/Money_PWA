@@ -1,6 +1,8 @@
 import * as icons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
+import { ON_COLOR_TEXT } from '@/utils/design'
+
 interface Props {
   icon: string
   color: string
@@ -14,7 +16,7 @@ export function CategoryIcon({ icon, color, size = 16 }: Props) {
       className="rounded-full flex items-center justify-center flex-shrink-0"
       style={{ backgroundColor: color, width: size + 12, height: size + 12 }}
     >
-      <IconComponent size={size} color="#fff" />
+      <IconComponent size={size} color={ON_COLOR_TEXT} />
     </div>
   )
 }

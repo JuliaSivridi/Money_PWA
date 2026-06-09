@@ -15,6 +15,7 @@ import { useCategoriesStore } from '@/store/categoriesStore'
 import { usePrefsStore } from '@/store/prefsStore'
 import { todayISO, currentTimeHHMM } from '@/utils/dateUtils'
 import { cn } from '@/lib/utils'
+import { DEFAULT_ENTITY_COLOR } from '@/utils/design'
 import type { Transaction, TransactionType } from '@/types/transaction'
 
 const getLastAccountId = () => localStorage.getItem('money-lastAccountId') ?? ''
@@ -298,7 +299,7 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
               const acc = activeAccounts.find(a => a.id === field.value)
               return acc ? (
                 <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: acc.color || '#6b7280' }} />
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: acc.color || DEFAULT_ENTITY_COLOR }} />
                   {acc.name}
                 </span>
               ) : null
@@ -309,7 +310,7 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
           {activeAccounts.map(a => (
             <SelectItem key={a.id} value={a.id}>
               <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: a.color || '#6b7280' }} />
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: a.color || DEFAULT_ENTITY_COLOR }} />
                 {a.name}
               </span>
             </SelectItem>

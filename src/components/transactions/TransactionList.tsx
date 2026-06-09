@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Wallet, SlidersHorizontal } from 'lucide-react'
+import { Wallet, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { FAB } from '@/components/common/FAB'
 import { FilterPanel } from '@/components/common/FilterPanel'
 import { TransactionItem } from './TransactionItem'
 import { TransactionModal } from './TransactionModal'
@@ -106,13 +107,7 @@ export function TransactionList() {
         )}
       </div>
 
-      {/* FAB */}
-      <button
-        onClick={() => setCreateOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
-      >
-        <Plus size={24} />
-      </button>
+      <FAB onClick={() => setCreateOpen(true)} />
 
       <TransactionModal
         open={createOpen || editTx !== null}

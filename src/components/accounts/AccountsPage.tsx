@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Plus, CreditCard, Wallet, PiggyBank, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react'
+import { CreditCard, Wallet, PiggyBank, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react'
 import { AccountModal } from './AccountModal'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { formatAmount } from '@/utils/currencyUtils'
+import { DEFAULT_ENTITY_COLOR, ON_COLOR_TEXT, ICON_SIZES } from '@/utils/design'
+import { FAB } from '@/components/common/FAB'
 import type { Account, AccountType } from '@/types/account'
 
 const TYPE_CONFIG: Record<AccountType, { label: string; Icon: React.FC<{ size?: number }> }> = {
@@ -15,12 +17,12 @@ const TYPE_CONFIG: Record<AccountType, { label: string; Icon: React.FC<{ size?: 
 
 function AccountRow({ account, onClick }: { account: Account; onClick: () => void }) {
   const { Icon } = TYPE_CONFIG[account.type]
-  const color = account.color || '#6b7280'
+  const color = account.color || DEFAULT_ENTITY_COLOR
   return (
     <button onClick={onClick} className="flex items-center gap-3 w-full px-4 py-3 hover:bg-accent transition-colors text-left">
       <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: color, color: '#fff' }}>
-        <Icon size={22} />
+        style={{ backgroundColor: color, color: ON_COLOR_TEXT }}>
+        <Icon size={ICON_SIZES.lg} />
       </div>
       <div className="flex-1">
         <p className="font-medium">{account.name}</p>
@@ -119,12 +121,7 @@ export function AccountsPage() {
         )}
       </div>
 
-      <button
-        onClick={() => setCreateOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
-      >
-        <Plus size={24} />
-      </button>
+      <FAB onClick={() => setCreateOpen(true)} />
 
       <AccountModal
         open={createOpen || editAccount !== null}

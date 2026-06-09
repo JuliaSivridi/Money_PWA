@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ColorPicker } from '@/components/common/ColorPicker'
 import { useAccountsStore } from '@/store/accountsStore'
+import { DEFAULT_ENTITY_COLOR } from '@/utils/design'
 import type { Account } from '@/types/account'
 
 const schema = z.object({
@@ -32,16 +33,16 @@ export function AccountModal({ open, editing, onClose }: Props) {
 
   const { register, handleSubmit, control, reset, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', currency: 'EUR', type: 'cash', color: '#6b7280', opening_balance: '0', archived: false },
+    defaultValues: { name: '', currency: 'EUR', type: 'cash', color: DEFAULT_ENTITY_COLOR, opening_balance: '0', archived: false },
   })
 
   useEffect(() => {
     if (!open) return
     setColorPickerOpen(false)
     if (editing) {
-      reset({ name: editing.name, currency: editing.currency, type: editing.type, color: editing.color || '#6b7280', opening_balance: String(editing.balance), archived: editing.archived })
+      reset({ name: editing.name, currency: editing.currency, type: editing.type, color: editing.color || DEFAULT_ENTITY_COLOR, opening_balance: String(editing.balance), archived: editing.archived })
     } else {
-      reset({ name: '', currency: 'EUR', type: 'cash', color: '#6b7280', opening_balance: '0', archived: false })
+      reset({ name: '', currency: 'EUR', type: 'cash', color: DEFAULT_ENTITY_COLOR, opening_balance: '0', archived: false })
     }
   }, [open, editing, reset])
 

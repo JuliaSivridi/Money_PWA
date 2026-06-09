@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
+import { ON_COLOR_TEXT, DEFAULT_ENTITY_COLOR } from '@/utils/design'
 
-const SWATCHES = [
+export const SWATCHES = [
   '#ef4444', '#dc2626',
   '#f97316', '#ea580c',
   '#eab308', '#ca8a04',
@@ -11,7 +12,7 @@ const SWATCHES = [
   '#3b82f6', '#2563eb',
   '#8b5cf6', '#7c3aed',
   '#ec4899', '#db2777',
-  '#6b7280', '#374151',
+  DEFAULT_ENTITY_COLOR, '#374151',
 ]
 
 interface Props {
@@ -30,7 +31,7 @@ export function ColorPicker({ value, onChange }: Props) {
           className="w-7 h-7 rounded-full relative flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: color }}
         >
-          {value === color && <Check size={14} color="#fff" strokeWidth={3} />}
+          {value === color && <Check size={14} color={ON_COLOR_TEXT} strokeWidth={3} />}
         </button>
       ))}
     </div>

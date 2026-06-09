@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Plus, Tag, GripVertical } from 'lucide-react'
+import { Tag, GripVertical } from 'lucide-react'
+import { FAB } from '@/components/common/FAB'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -203,12 +204,7 @@ export function CategoriesPage() {
         )}
       </div>
 
-      <button
-        onClick={() => setCreateOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
-      >
-        <Plus size={24} />
-      </button>
+      <FAB onClick={() => setCreateOpen(true)} />
 
       <CategoryModal
         open={createOpen || editCategory !== null}

@@ -2,6 +2,7 @@ import type { Transaction, TransactionType } from '@/types/transaction'
 import type { Account, AccountType } from '@/types/account'
 import type { Category } from '@/types/category'
 import { TRANSACTION_COLS, ACCOUNT_COLS, CATEGORY_COLS } from './constants'
+import { DEFAULT_ENTITY_COLOR } from './design'
 
 function cell(row: string[], idx: number): string {
   return row[idx] ?? ''
@@ -59,7 +60,7 @@ export function rowToAccount(row: string[]): Account {
     name:       cell(row, ACCOUNT_COLS.NAME),
     currency:   cell(row, ACCOUNT_COLS.CURRENCY) || 'EUR',
     type:       (cell(row, ACCOUNT_COLS.TYPE) || 'cash') as AccountType,
-    color:      cell(row, ACCOUNT_COLS.COLOR) || '#6b7280',
+    color:      cell(row, ACCOUNT_COLS.COLOR) || DEFAULT_ENTITY_COLOR,
     balance:    Number(cell(row, ACCOUNT_COLS.BALANCE)) || 0,
     archived:   cell(row, ACCOUNT_COLS.ARCHIVED) === 'TRUE',
     sort_order: Number(cell(row, ACCOUNT_COLS.SORT_ORDER)) || 0,
@@ -79,7 +80,7 @@ export function accountToRow(a: Account): string[] {
   row[ACCOUNT_COLS.SORT_ORDER] = String(a.sort_order)
   row[ACCOUNT_COLS.CREATED_AT] = a.created_at
   row[ACCOUNT_COLS.UPDATED_AT] = a.updated_at
-  row[ACCOUNT_COLS.COLOR]      = a.color || '#6b7280'
+  row[ACCOUNT_COLS.COLOR]      = a.color || DEFAULT_ENTITY_COLOR
   return row
 }
 
@@ -90,7 +91,7 @@ export function rowToCategory(row: string[]): Category {
     id:            cell(row, CATEGORY_COLS.ID),
     name:          cell(row, CATEGORY_COLS.NAME),
     icon:          cell(row, CATEGORY_COLS.ICON) || 'Tag',
-    color:         cell(row, CATEGORY_COLS.COLOR) || '#6b7280',
+    color:         cell(row, CATEGORY_COLS.COLOR) || DEFAULT_ENTITY_COLOR,
     is_expense:    cell(row, CATEGORY_COLS.IS_EXPENSE) !== 'FALSE',
     expense_limit: Number(cell(row, CATEGORY_COLS.EXPENSE_LIMIT)) || 0,
     is_income:     cell(row, CATEGORY_COLS.IS_INCOME) === 'TRUE',
