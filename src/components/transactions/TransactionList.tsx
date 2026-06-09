@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Wallet } from 'lucide-react'
+import { Plus, Wallet, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { FilterPanel } from '@/components/common/FilterPanel'
 import { TransactionItem } from './TransactionItem'
 import { TransactionModal } from './TransactionModal'
 import { FilterBar } from '@/components/common/FilterBar'
 import { useTransactionsByDate, useFilteredTransactions } from '@/hooks/useTransactions'
-import { useAccountsStore } from '@/store/accountsStore'
 import { useUIStore } from '@/store/uiStore'
-import { usePrefsStore } from '@/store/prefsStore'
-import { formatAmount } from '@/utils/currencyUtils'
 import type { Transaction } from '@/types/transaction'
 
 /** How many date-groups to render per page */
@@ -16,21 +14,16 @@ const PAGE_SIZE = 20
 
 export function TransactionList() {
   const { filterState } = useUIStore()
-  const { accounts } = useAccountsStore()
-  const { baseCurrency } = usePrefsStore()
   const allGroups = useTransactionsByDate()
   const filtered = useFilteredTransactions(filterState)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editTx, setEditTx] = useState<Transaction | null>(null)
+  const [copyTx, setCopyTx] = useState<Transaction | null>(null)
+  const [filterOpen, setFilterOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
-
-  // Total balance: sum non-archived, non-investment accounts
-  const totalBalance = accounts
-    .filter(a => !a.archived && a.type !== 'investment')
-    .reduce((sum, a) => sum + a.balance, 0)
 
   const hasFilters = filterState.accountIds.length > 0 || filterState.types.length > 0 ||
     filterState.categoryIds.length > 0 || filterState.dateFrom || filterState.dateTo
@@ -70,14 +63,17 @@ export function TransactionList() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Balance bar */}
-      <div className="px-4 py-3 border-b bg-secondary/30 flex items-center justify-between">
-        <span className="text-muted-foreground text-sm">Total balance</span>
-        <span className="font-semibold">{formatAmount(totalBalance, baseCurrency)}</span>
+      {/* Filter chips + filter button */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b">
+        <button
+          onClick={() => setFilterOpen(true)}
+          className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-full border text-xs font-medium transition-colors ${hasFilters ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
+        >
+          <SlidersHorizontal size={13} />
+          Filters
+        </button>
+        <FilterBar filterState={filterState} inline />
       </div>
-
-      {/* Active filter chips */}
-      <FilterBar filterState={filterState} />
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
@@ -122,7 +118,14 @@ export function TransactionList() {
         open={createOpen || editTx !== null}
         editing={editTx}
         onClose={() => { setCreateOpen(false); setEditTx(null) }}
+        onCopy={(tx) => { setEditTx(null); setCopyTx(tx) }}
       />
+      <TransactionModal
+        open={copyTx !== null}
+        copyFrom={copyTx}
+        onClose={() => setCopyTx(null)}
+      />
+      <FilterPanel open={filterOpen} onClose={() => setFilterOpen(false)} />
     </div>
   )
 }

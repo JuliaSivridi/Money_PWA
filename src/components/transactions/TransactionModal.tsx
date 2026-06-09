@@ -100,12 +100,14 @@ type ActiveField = 'amount' | 'to_amount'
 interface Props {
   open: boolean
   editing?: Transaction | null
+  copyFrom?: Transaction | null
   onClose: () => void
+  onCopy?: (tx: Transaction) => void
 }
 
 // ─── TransactionModal ─────────────────────────────────────────────────────────
 
-export function TransactionModal({ open, editing, onClose }: Props) {
+export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: Props) {
   const { addTransaction, updateTransaction, deleteTransaction, transactions } = useTransactionsStore()
   const { accounts } = useAccountsStore()
   const { categories } = useCategoriesStore()
@@ -145,22 +147,25 @@ export function TransactionModal({ open, editing, onClose }: Props) {
   useEffect(() => {
     if (!open) return
     const defaultAccountId = getLastAccountId() || activeAccounts[0]?.id || ''
-    if (editing) {
+    const src = editing ?? copyFrom
+    if (src) {
       const tabType: TabType =
-        editing.type === 'expense' ? 'expense'
-        : editing.type === 'income' ? 'income'
-        : editing.type === 'transfer' ? 'transfer'
+        src.type === 'expense' ? 'expense'
+        : src.type === 'income' ? 'income'
+        : src.type === 'transfer' ? 'transfer'
         : 'debt'
       setTab(tabType)
       reset({
-        amount: String(editing.amount), currency: editing.currency,
-        category_ids: editing.category_ids, account_id: editing.account_id,
-        to_account_id: editing.to_account_id,
-        to_amount: editing.to_amount ? String(editing.to_amount) : '',
-        to_currency: editing.to_currency || baseCurrency,
-        date: editing.date, comment: editing.comment,
-        debt_subtype: editing.type === 'debt_borrowed' ? 'borrowed' : 'lent',
-        debt_ref_id: editing.debt_ref_id,
+        amount: String(src.amount), currency: src.currency,
+        category_ids: src.category_ids, account_id: src.account_id,
+        to_account_id: src.to_account_id,
+        to_amount: src.to_amount ? String(src.to_amount) : '',
+        to_currency: src.to_currency || baseCurrency,
+        // copyFrom always gets today's date; editing keeps original date
+        date: copyFrom ? todayISO() : src.date,
+        comment: src.comment,
+        debt_subtype: src.type === 'debt_borrowed' ? 'borrowed' : 'lent',
+        debt_ref_id: copyFrom ? '' : src.debt_ref_id,
       })
     } else {
       setTab('expense')
@@ -171,7 +176,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
         date: todayISO(), comment: '', debt_subtype: 'lent', debt_ref_id: '',
       })
     }
-  }, [open, editing, baseCurrency, reset]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, editing, copyFrom, baseCurrency, reset]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const categoryUsage = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -426,9 +431,14 @@ export function TransactionModal({ open, editing, onClose }: Props) {
 
           <DialogFooter className="flex-row items-center">
             {editing && (
-              <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)} disabled={saving} className="mr-auto">
-                Delete
-              </Button>
+              <div className="flex gap-2 mr-auto">
+                <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)} disabled={saving}>
+                  Delete
+                </Button>
+                <Button type="button" variant="outline" onClick={() => onCopy?.(editing)} disabled={saving}>
+                  Copy
+                </Button>
+              </div>
             )}
             <div className="flex gap-2 ml-auto">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

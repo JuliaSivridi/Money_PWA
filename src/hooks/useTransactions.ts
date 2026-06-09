@@ -57,6 +57,8 @@ export function useFilteredTransactions(filterState: FilterState): Transaction[]
       if (filterState.categoryIds.length > 0 && !t.category_ids.some(id => filterState.categoryIds.includes(id))) return false
       if (filterState.dateFrom && t.date < filterState.dateFrom) return false
       if (filterState.dateTo && t.date > filterState.dateTo) return false
+      if (filterState.amountMin !== '' && t.amount < Number(filterState.amountMin)) return false
+      if (filterState.amountMax !== '' && t.amount > Number(filterState.amountMax)) return false
       return true
     })
   }, [transactions, filterState])

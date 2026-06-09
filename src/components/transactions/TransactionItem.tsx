@@ -63,9 +63,11 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
               ? (t.comment ? `${primaryCategory.name} · ${t.comment}` : primaryCategory.name)
               : (t.comment ?? t.type)}
         </p>
-        <p className="text-xs truncate font-medium"
-          style={{ color: account?.color || '#6b7280' }}>
-          {t.time && t.time !== '00:00' ? `${t.time} · ` : ''}{account?.name ?? ''}
+        <p className="text-xs truncate font-medium">
+          {t.time && t.time !== '00:00' && (
+            <span className="text-muted-foreground">{t.time} · </span>
+          )}
+          <span style={{ color: account?.color || '#6b7280' }}>{account?.name ?? ''}</span>
         </p>
       </div>
 

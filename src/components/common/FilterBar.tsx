@@ -8,15 +8,17 @@ const TYPES = ['expense', 'income', 'transfer', 'debt_lent', 'debt_borrowed'] as
 
 interface Props {
   filterState: FilterState
+  inline?: boolean
 }
 
-export function FilterBar({ filterState }: Props) {
+export function FilterBar({ filterState, inline }: Props) {
   const { setFilter, clearFilters } = useUIStore()
   const { accounts } = useAccountsStore()
   const { categories } = useCategoriesStore()
 
   const hasFilters = filterState.accountIds.length > 0 || filterState.types.length > 0 ||
-    filterState.categoryIds.length > 0 || filterState.dateFrom || filterState.dateTo
+    filterState.categoryIds.length > 0 || filterState.dateFrom || filterState.dateTo ||
+    filterState.amountMin !== '' || filterState.amountMax !== ''
 
   if (!hasFilters) return null
 
@@ -28,36 +30,39 @@ export function FilterBar({ filterState }: Props) {
     setFilter({ categoryIds: filterState.categoryIds.filter(c => c !== id) })
   const removeDateFrom = () => setFilter({ dateFrom: '' })
   const removeDateTo = () => setFilter({ dateTo: '' })
+  const removeAmountMin = () => setFilter({ amountMin: '' })
+  const removeAmountMax = () => setFilter({ amountMax: '' })
 
-  return (
-    <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/30 border-b overflow-x-auto scrollbar-none flex-nowrap">
+  const chips = (
+    <>
       {filterState.accountIds.map(id => {
         const acc = accounts.find(a => a.id === id)
-        return acc ? (
-          <Chip key={id} label={acc.name} onRemove={() => removeAccount(id)} />
-        ) : null
+        return acc ? <Chip key={id} label={acc.name} onRemove={() => removeAccount(id)} /> : null
       })}
       {filterState.types.map(t => (
-        <Chip key={t} label={t} onRemove={() => removeType(t)} />
+        <Chip key={t} label={t.replace('_', ' ')} onRemove={() => removeType(t)} />
       ))}
       {filterState.categoryIds.map(id => {
         const cat = categories.find(c => c.id === id)
-        return cat ? (
-          <Chip key={id} label={cat.name} onRemove={() => removeCategory(id)} />
-        ) : null
+        return cat ? <Chip key={id} label={cat.name} onRemove={() => removeCategory(id)} /> : null
       })}
-      {filterState.dateFrom && (
-        <Chip label={`From ${filterState.dateFrom}`} onRemove={removeDateFrom} />
-      )}
-      {filterState.dateTo && (
-        <Chip label={`To ${filterState.dateTo}`} onRemove={removeDateTo} />
-      )}
-      <button
-        onClick={clearFilters}
-        className="ml-1 shrink-0 text-xs text-muted-foreground hover:text-foreground underline whitespace-nowrap"
-      >
+      {filterState.dateFrom && <Chip label={`From ${filterState.dateFrom}`} onRemove={removeDateFrom} />}
+      {filterState.dateTo && <Chip label={`To ${filterState.dateTo}`} onRemove={removeDateTo} />}
+      {filterState.amountMin !== '' && <Chip label={`≥ ${filterState.amountMin}`} onRemove={removeAmountMin} />}
+      {filterState.amountMax !== '' && <Chip label={`≤ ${filterState.amountMax}`} onRemove={removeAmountMax} />}
+      <button onClick={clearFilters} className="ml-1 shrink-0 text-xs text-muted-foreground hover:text-foreground underline whitespace-nowrap">
         Clear all
       </button>
+    </>
+  )
+
+  if (inline) {
+    return <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-nowrap flex-1">{chips}</div>
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/30 border-b overflow-x-auto scrollbar-none flex-nowrap">
+      {chips}
     </div>
   )
 }

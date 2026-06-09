@@ -9,6 +9,8 @@ export interface FilterState {
   categoryIds: string[]
   dateFrom: string
   dateTo: string
+  amountMin: string
+  amountMax: string
 }
 
 interface UIState {
@@ -31,6 +33,8 @@ const emptyFilter: FilterState = {
   categoryIds: [],
   dateFrom: '',
   dateTo: '',
+  amountMin: '',
+  amountMax: '',
 }
 
 export const useUIStore = create<UIState>((set) => ({
