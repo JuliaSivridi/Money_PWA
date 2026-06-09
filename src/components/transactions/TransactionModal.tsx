@@ -278,7 +278,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
             {/* ── EXPENSE ── */}
             <TabsContent value="expense" className="space-y-3 mt-4">
               <Controller name="amount" control={control} render={({ field }) => (
-                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} autoOpen={!editing} />
+                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} autoOpen />
               )} />
               {errors.amount && <p className="text-destructive text-xs -mt-2">Required</p>}
               {categoryGrid(sortedExpense)}
