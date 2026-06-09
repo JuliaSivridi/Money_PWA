@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -27,43 +27,20 @@ function isoToDisplay(iso: string) {
 
 // ─── AmountInput ──────────────────────────────────────────────────────────────
 
-export function AmountInput({ value, onChange, placeholder = '0.00', autoOpen = false }: {
+export function AmountInput({ value, onChange, placeholder = '0.00' }: {
   value: string; onChange: (v: string) => void; placeholder?: string; autoOpen?: boolean
 }) {
-  const [open, setOpen] = useState(autoOpen)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: PointerEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('pointerdown', handler)
-    return () => document.removeEventListener('pointerdown', handler)
-  }, [open])
-
   return (
-    <div ref={containerRef} className="relative">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setOpen(v => !v)}
-        onKeyDown={e => e.key === 'Enter' && setOpen(v => !v)}
-        className={cn(
-          'w-full px-3 py-2 border rounded-md bg-background text-foreground cursor-pointer select-none',
-          open ? 'border-ring ring-2 ring-ring' : 'border-input',
-          !value && 'text-muted-foreground',
-        )}
-      >
+    <div>
+      <div className={cn(
+        'w-full px-3 py-2 border border-input rounded-md bg-background text-foreground select-none',
+        !value && 'text-muted-foreground',
+      )}>
         {value || placeholder}
       </div>
-      {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-10 rounded-md overflow-hidden border border-border shadow-lg">
-          <NumericKeyboard value={value} onChange={onChange} />
-        </div>
-      )}
+      <div className="mt-1 rounded-md overflow-hidden border border-border">
+        <NumericKeyboard value={value} onChange={onChange} />
+      </div>
     </div>
   )
 }
