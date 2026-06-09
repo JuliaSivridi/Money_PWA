@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Plus, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TransactionItem } from './TransactionItem'
@@ -11,6 +11,9 @@ import { usePrefsStore } from '@/store/prefsStore'
 import { formatAmount } from '@/utils/currencyUtils'
 import type { Transaction } from '@/types/transaction'
 
+/** How many date-groups to render per page */
+const PAGE_SIZE = 20
+
 export function TransactionList() {
   const { filterState } = useUIStore()
   const { accounts } = useAccountsStore()
@@ -20,6 +23,9 @@ export function TransactionList() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editTx, setEditTx] = useState<Transaction | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   // Total balance: sum non-archived, non-investment accounts
   const totalBalance = accounts
@@ -29,7 +35,7 @@ export function TransactionList() {
   const hasFilters = filterState.accountIds.length > 0 || filterState.types.length > 0 ||
     filterState.categoryIds.length > 0 || filterState.dateFrom || filterState.dateTo
 
-  const displayGroups = hasFilters
+  const allDisplayGroups = hasFilters
     ? (() => {
         const groups = new Map<string, typeof allGroups[0]>()
         for (const g of allGroups) {
@@ -39,6 +45,28 @@ export function TransactionList() {
         return Array.from(groups.values())
       })()
     : allGroups
+
+  // Reset visible count when filter/data changes
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [hasFilters, allGroups.length])
+
+  const displayGroups = allDisplayGroups.slice(0, visibleCount)
+  const hasMore = visibleCount < allDisplayGroups.length
+
+  // IntersectionObserver — load next page when sentinel scrolls into view
+  const loadMore = useCallback(() => {
+    setVisibleCount(n => Math.min(n + PAGE_SIZE, allDisplayGroups.length))
+  }, [allDisplayGroups.length])
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore() },
+      { rootMargin: '200px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [loadMore])
 
   return (
     <div className="flex flex-col h-full">
@@ -60,19 +88,28 @@ export function TransactionList() {
             <Button variant="ghost" size="sm" onClick={() => setCreateOpen(true)}>+ Add transaction</Button>
           </div>
         ) : (
-          displayGroups.map(group => (
-            <div key={group.date}>
-              <div className="flex items-center justify-between px-4 py-2 bg-muted/40 border-b">
-                <span className="text-xs text-muted-foreground font-medium">{group.label}</span>
-                <span className={`text-xs font-medium ${group.dailyNet >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {group.dailyNet >= 0 ? '+' : ''}{formatAmount(group.dailyNet, baseCurrency)}
-                </span>
+          <>
+            {displayGroups.map(group => (
+              <div key={group.date}>
+                <div className="flex items-center justify-between px-4 py-2 bg-muted/40 border-b">
+                  <span className="text-xs text-muted-foreground font-medium">{group.label}</span>
+                  <span className={`text-xs font-medium ${group.dailyNet >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {group.dailyNet >= 0 ? '+' : ''}{formatAmount(group.dailyNet, baseCurrency)}
+                  </span>
+                </div>
+                {group.transactions.map(t => (
+                  <TransactionItem key={t.id} transaction={t} onClick={() => setEditTx(t)} />
+                ))}
               </div>
-              {group.transactions.map(t => (
-                <TransactionItem key={t.id} transaction={t} onClick={() => setEditTx(t)} />
-              ))}
-            </div>
-          ))
+            ))}
+
+            {/* Sentinel — observed by IntersectionObserver */}
+            {hasMore && (
+              <div ref={sentinelRef} className="py-4 flex justify-center">
+                <span className="text-xs text-muted-foreground">Loading…</span>
+              </div>
+            )}
+          </>
         )}
       </div>
 
