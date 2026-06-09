@@ -27,10 +27,10 @@ function isoToDisplay(iso: string) {
 
 // ─── AmountInput ──────────────────────────────────────────────────────────────
 
-export function AmountInput({ value, onChange, placeholder = '0.00' }: {
-  value: string; onChange: (v: string) => void; placeholder?: string
+export function AmountInput({ value, onChange, placeholder = '0.00', autoOpen = false }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; autoOpen?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(autoOpen)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -278,7 +278,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
             {/* ── EXPENSE ── */}
             <TabsContent value="expense" className="space-y-3 mt-4">
               <Controller name="amount" control={control} render={({ field }) => (
-                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} />
+                <AmountInput value={field.value} onChange={field.onChange} placeholder={`0.00 ${watchCurrency}`} autoOpen={!editing} />
               )} />
               {errors.amount && <p className="text-destructive text-xs -mt-2">Required</p>}
               {categoryGrid(sortedExpense)}
