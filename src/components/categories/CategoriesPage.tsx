@@ -20,37 +20,39 @@ import type { Category } from '@/types/category'
 
 type ActiveTab = 'expenses' | 'income'
 
-// ── Amount column — mirrors AccountRow layout ──────────────────────────────────
+// ── Amount column ─────────────────────────────────────────────────────────────
 
 function CategoryAmount({ amount, limit, currency, isExpense }: {
   amount: number; limit: number; currency: string; isExpense: boolean
 }) {
-  const color = amount === 0
-    ? 'text-muted-foreground'
-    : isExpense && limit > 0 && amount > limit
-      ? 'text-red-400'
-      : isExpense
-        ? 'text-foreground'
-        : 'text-green-400'
-
-  return (
-    <div className="text-right shrink-0">
-      <p className={`font-medium ${color}`}>
-        {amount > 0 ? formatAmount(amount, currency) : '—'}
+  if (isExpense && limit > 0) {
+    const over = amount > limit
+    return (
+      <div className="text-right shrink-0 min-w-0">
+        <p className={`font-medium ${over ? 'text-red-400' : 'text-foreground'}`}>
+          {formatAmount(amount, currency)}
+          <span className={`ml-1 text-sm ${over ? 'text-red-400' : 'text-green-400'}`}>
+            {over ? '✕' : '✓'}
+          </span>
+          <span className="text-muted-foreground font-normal text-sm"> {formatAmount(limit, currency)}</span>
+        </p>
+        <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${over ? 'bg-red-400' : 'bg-green-400'}`}
+            style={{ width: `${Math.min(amount / limit, 1) * 100}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+  if (amount > 0) {
+    return (
+      <p className={`font-medium shrink-0 ${isExpense ? 'text-foreground' : 'text-green-400'}`}>
+        {formatAmount(amount, currency)}
       </p>
-      {isExpense && limit > 0 && (
-        <>
-          <div className="mt-0.5 h-1 w-20 rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${amount > limit ? 'bg-red-400' : 'bg-green-400'}`}
-              style={{ width: `${Math.min(amount / limit, 1) * 100}%` }}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">{formatAmount(limit, currency)}</p>
-        </>
-      )}
-    </div>
-  )
+    )
+  }
+  return null
 }
 
 // ── Sortable row ───────────────────────────────────────────────────────────────
