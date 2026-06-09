@@ -13,6 +13,7 @@ export function rowToTransaction(row: string[]): Transaction {
   return {
     id:            cell(row, TRANSACTION_COLS.ID),
     date:          cell(row, TRANSACTION_COLS.DATE),
+    time:          cell(row, TRANSACTION_COLS.TIME) || '00:00',
     type:          (cell(row, TRANSACTION_COLS.TYPE) || 'expense') as TransactionType,
     amount:        Number(cell(row, TRANSACTION_COLS.AMOUNT)) || 0,
     currency:      cell(row, TRANSACTION_COLS.CURRENCY) || 'EUR',
@@ -30,9 +31,10 @@ export function rowToTransaction(row: string[]): Transaction {
 }
 
 export function transactionToRow(t: Transaction): string[] {
-  const row = new Array(15).fill('')
+  const row = new Array(16).fill('')
   row[TRANSACTION_COLS.ID]            = t.id
   row[TRANSACTION_COLS.DATE]          = t.date
+  row[TRANSACTION_COLS.TIME]          = t.time || '00:00'
   row[TRANSACTION_COLS.TYPE]          = t.type
   row[TRANSACTION_COLS.AMOUNT]        = String(t.amount)
   row[TRANSACTION_COLS.CURRENCY]      = t.currency

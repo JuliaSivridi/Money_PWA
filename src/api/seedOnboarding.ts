@@ -13,7 +13,7 @@ export async function seedOnboarding(): Promise<void> {
   const cat3Id = generateId('cat')
 
   const txnHeader = [
-    'id','date','type','amount','currency','amount_base',
+    'id','date','time','type','amount','currency','amount_base',
     'account_id','category_ids','to_account_id','to_amount','to_currency',
     'debt_ref_id','comment','created_at','updated_at',
   ]
@@ -37,14 +37,14 @@ export async function seedOnboarding(): Promise<void> {
   // seed one expense so the transactions sheet has data right away
   const txn1Id = generateId('txn')
   const txnRows = [
-    [txn1Id, today, 'expense', '10', 'EUR', '10', acc1Id, cat1Id, '', '0', '', '', 'Groceries', ts, ts],
+    [txn1Id, today, '00:00', 'expense', '10', 'EUR', '10', acc1Id, cat1Id, '', '0', '', '', 'Groceries', ts, ts],
   ]
 
   await sheetsRequest('POST', 'values:batchUpdate', {
     valueInputOption: 'RAW',
     data: [
-      { range: 'transactions!A1:O1', values: [txnHeader] },
-      { range: 'transactions!A2:O2', values: txnRows },
+      { range: 'transactions!A1:P1', values: [txnHeader] },
+      { range: 'transactions!A2:P2', values: txnRows },
       { range: 'accounts!A1:I1',     values: [accHeader] },
       { range: 'accounts!A2:I3',     values: accRows },
       { range: 'categories!A1:K1',   values: [catHeader] },

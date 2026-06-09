@@ -9,6 +9,7 @@ export interface Transaction {
   localId?: number
   id: string
   date: string
+  time: string
   type: TransactionType
   amount: number
   currency: string

@@ -88,8 +88,8 @@ for (const [name, { real, currency }] of Object.entries(REAL)) {
   console.log(`  ${name.padEnd(22)} calc=${calculated.toFixed(2)} real=${real} diff=${diff > 0 ? '+' : ''}${diff} → ${type} ${amount} ${currency}`)
 
   corrections.push([
-    id, '2021-12-31', type,
-    amount.toFixed(2), currency, currency === 'EUR' ? amount.toFixed(2) : '0',
+    id, '2021-12-31', '00:00', type,
+    amount.toFixed(2), currency, currency === 'EUR' ? amount.toFixed(2) : String(Math.round(amount / 88 * 100) / 100),
     acc.id, '', '', '0', '',
     '', 'Opening balance correction', NOW, NOW,
   ])
@@ -104,7 +104,7 @@ if (corrections.length === 0) {
 }
 
 // ── Append corrections to transactions.csv ───────────────────────────────────
-const txnHeader = 'id,date,type,amount,currency,amount_base,account_id,category_ids,to_account_id,to_amount,to_currency,debt_ref_id,comment,created_at,updated_at'
+const txnHeader = 'id,date,time,type,amount,currency,amount_base,account_id,category_ids,to_account_id,to_amount,to_currency,debt_ref_id,comment,created_at,updated_at'
 const { rows: existingTxns } = parseCSV('enrich/transactions.csv')
 
 // Remove any previous corrections to avoid duplicates on re-run
@@ -120,7 +120,7 @@ const allTxns = [...filtered, ...corrections.map(c => {
 allTxns.sort((a, b) => a.date < b.date ? -1 : 1)
 
 const txnLines = allTxns.map(t => toCsvLine([
-  t.id, t.date, t.type, t.amount, t.currency, t.amount_base,
+  t.id, t.date, t.time || '00:00', t.type, t.amount, t.currency, t.amount_base,
   t.account_id, t.category_ids, t.to_account_id, t.to_amount, t.to_currency,
   t.debt_ref_id, t.comment, t.created_at, t.updated_at,
 ]))

@@ -19,8 +19,8 @@ function AccountRow({ account, onClick }: { account: Account; onClick: () => voi
   return (
     <button onClick={onClick} className="flex items-center gap-3 w-full px-4 py-3 hover:bg-accent transition-colors text-left">
       <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: color + '33', color }}>
-        <Icon size={20} />
+        style={{ backgroundColor: color, color: '#fff' }}>
+        <Icon size={22} />
       </div>
       <div className="flex-1">
         <p className="font-medium">{account.name}</p>

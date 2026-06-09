@@ -52,18 +52,18 @@ function zenDateToISO(s) {
 const NOW = '2026-06-09T12:00:00.000Z'
 
 const ACCOUNT_DEFS = [
-  { zen: '€ S-Pankki',        name: 'S-Pankki',         currency: 'EUR', type: 'card'       },
-  { zen: '€ Wise',            name: 'Wise',              currency: 'EUR', type: 'card'       },
-  { zen: '€ Cash',            name: '€ Cash',            currency: 'EUR', type: 'cash'       },
-  { zen: '€ Revolut',         name: 'Revolut',           currency: 'EUR', type: 'card'       },
-  { zen: '₽ Tinkoff Debit',   name: 'Tinkoff Debit',    currency: 'RUB', type: 'card'       },
-  { zen: '₽ Tinkoff BigSave', name: 'Tinkoff BigSave',  currency: 'RUB', type: 'savings'    },
-  { zen: '₽ Tinkoff Save',    name: 'Tinkoff Save',     currency: 'RUB', type: 'savings'    },
-  { zen: '₽ Cash',            name: '₽ Cash',            currency: 'RUB', type: 'cash'       },
-  { zen: 'Tinkoff Brokerage', name: 'Tinkoff Brokerage', currency: 'RUB', type: 'investment' },
-  { zen: 'Tinkoff IIS',       name: 'Tinkoff IIS',       currency: 'RUB', type: 'investment' },
-  { zen: 'Trading 212',       name: 'Trading 212',       currency: 'EUR', type: 'investment' },
-  { zen: 'eToro',             name: 'eToro',             currency: 'USD', type: 'investment' },
+  { zen: '€ S-Pankki',        name: 'S-Pankki',          currency: 'EUR', type: 'card',       color: '#3b82f6' },
+  { zen: '€ Wise',            name: 'Wise',               currency: 'EUR', type: 'card',       color: '#06b6d4' },
+  { zen: '€ Cash',            name: '€ Cash',             currency: 'EUR', type: 'cash',       color: '#10b981' },
+  { zen: '€ Revolut',         name: 'Revolut',            currency: 'EUR', type: 'card',       color: '#8b5cf6' },
+  { zen: '₽ Tinkoff Debit',   name: 'Tinkoff Debit',     currency: 'RUB', type: 'card',       color: '#ef4444' },
+  { zen: '₽ Tinkoff BigSave', name: 'Tinkoff BigSave',   currency: 'RUB', type: 'savings',    color: '#f97316' },
+  { zen: '₽ Tinkoff Save',    name: 'Tinkoff Save',      currency: 'RUB', type: 'savings',    color: '#f97316' },
+  { zen: '₽ Cash',            name: '₽ Cash',             currency: 'RUB', type: 'cash',       color: '#f59e0b' },
+  { zen: 'Tinkoff Brokerage', name: 'Tinkoff Brokerage',  currency: 'RUB', type: 'investment', color: '#6366f1' },
+  { zen: 'Tinkoff IIS',       name: 'Tinkoff IIS',        currency: 'RUB', type: 'investment', color: '#6366f1' },
+  { zen: 'Trading 212',       name: 'Trading 212',        currency: 'EUR', type: 'investment', color: '#14b8a6' },
+  { zen: 'eToro',             name: 'eToro',              currency: 'USD', type: 'investment', color: '#22c55e' },
 ]
 
 /** zen display name → account row object */
@@ -73,6 +73,7 @@ for (let i = 0; i < ACCOUNT_DEFS.length; i++) {
   ACC_BY_ZEN[d.zen] = {
     id: makeId('acc', d.zen),
     name: d.name, currency: d.currency, type: d.type,
+    color: d.color || '#6b7280',
     balance: '0', archived: 'FALSE',
     sort_order: String(i + 1),
     created_at: NOW, updated_at: NOW,
@@ -196,8 +197,10 @@ for (const line of rawLines) {
   const inAcc   = r[7]
   const inAmt   = parseAmount(r[8])
   const inCur   = r[9]
-  const createdAt = r[10] ? zenDateToISO(r[10]) : NOW
+  const createdDateStr = r[10] || ''
+  const createdAt = createdDateStr ? zenDateToISO(createdDateStr) : NOW
   const updatedAt = r[11] ? zenDateToISO(r[11]) : NOW
+  const time = createdDateStr.includes(' ') ? createdDateStr.split(' ')[1].slice(0, 5) : '00:00'
 
   // Skip Долги entirely
   if (outAcc === 'Долги' || inAcc === 'Долги') continue
@@ -228,7 +231,7 @@ for (const line of rawLines) {
     const fromAcc = ACC_BY_ZEN[outAcc]
     const toAcc   = ACC_BY_ZEN[inAcc]
     transactions.push([
-      id, date, 'transfer',
+      id, date, time, 'transfer',
       String(outAmt), outCur, amountBase(outAmt, outCur),
       fromAcc.id, catIds.join(','), toAcc.id,
       String(inAmt), inCur,
@@ -242,7 +245,7 @@ for (const line of rawLines) {
       ? (comment ? `${comment} [→ ${inAcc}]` : `→ ${inAcc}`)
       : comment
     transactions.push([
-      id, date, 'expense',
+      id, date, time, 'expense',
       String(outAmt), outCur, amountBase(outAmt, outCur),
       acc.id, catIds.join(','), '', '0', '',
       '', note, createdAt, updatedAt,
@@ -255,7 +258,7 @@ for (const line of rawLines) {
       ? (comment ? `${comment} [← ${outAcc}]` : `← ${outAcc}`)
       : comment
     transactions.push([
-      id, date, 'income',
+      id, date, time, 'income',
       String(inAmt), inCur, amountBase(inAmt, inCur),
       acc.id, catIds.join(','), '', '0', '',
       '', note, createdAt, updatedAt,
@@ -269,9 +272,9 @@ for (const line of rawLines) {
 
 // ── write output ─────────────────────────────────────────────────────────────
 
-const accHeader = 'id,name,currency,type,balance,archived,sort_order,created_at,updated_at'
+const accHeader = 'id,name,currency,type,balance,archived,sort_order,created_at,updated_at,color'
 const accRows = Object.values(ACC_BY_ZEN).map(a =>
-  toCsvLine([a.id, a.name, a.currency, a.type, a.balance, a.archived, a.sort_order, a.created_at, a.updated_at])
+  toCsvLine([a.id, a.name, a.currency, a.type, a.balance, a.archived, a.sort_order, a.created_at, a.updated_at, a.color])
 )
 fs.writeFileSync('enrich/accounts.csv', [accHeader, ...accRows].join('\n'), 'utf8')
 
@@ -281,7 +284,7 @@ const catRows = Object.values(CAT_BY_KEY).map(c =>
 )
 fs.writeFileSync('enrich/categories.csv', [catHeader, ...catRows].join('\n'), 'utf8')
 
-const txnHeader = 'id,date,type,amount,currency,amount_base,account_id,category_ids,to_account_id,to_amount,to_currency,debt_ref_id,comment,created_at,updated_at'
+const txnHeader = 'id,date,time,type,amount,currency,amount_base,account_id,category_ids,to_account_id,to_amount,to_currency,debt_ref_id,comment,created_at,updated_at'
 const txnRows = transactions.map(t => toCsvLine(t))
 fs.writeFileSync('enrich/transactions.csv', [txnHeader, ...txnRows].join('\n'), 'utf8')
 

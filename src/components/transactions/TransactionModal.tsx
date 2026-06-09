@@ -13,7 +13,7 @@ import { useTransactionsStore } from '@/store/transactionsStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
 import { usePrefsStore } from '@/store/prefsStore'
-import { todayISO } from '@/utils/dateUtils'
+import { todayISO, currentTimeHHMM } from '@/utils/dateUtils'
 import { cn } from '@/lib/utils'
 import type { Transaction, TransactionType } from '@/types/transaction'
 
@@ -202,7 +202,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
 
       saveLastAccountId(values.account_id)
       const input = {
-        date: values.date, type,
+        date: values.date, time: editing?.time ?? currentTimeHHMM(), type,
         amount: parseFloat(values.amount) || 0,
         currency: values.currency, amount_base: 0,
         account_id: values.account_id,
@@ -408,7 +408,7 @@ export function TransactionModal({ open, editing, onClose }: Props) {
               {editing && !editing.debt_ref_id && (
                 <Button type="button" variant="outline" className="w-full" onClick={async () => {
                   await addTransaction({
-                    date: todayISO(), type: editing.type, amount: editing.amount,
+                    date: todayISO(), time: currentTimeHHMM(), type: editing.type, amount: editing.amount,
                     currency: editing.currency, amount_base: 0, account_id: editing.account_id,
                     category_ids: [], to_account_id: '', to_amount: 0, to_currency: '',
                     debt_ref_id: editing.id, comment: editing.comment,

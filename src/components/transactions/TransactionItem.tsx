@@ -39,16 +39,16 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
       ) : txnCategories.length > 1 ? (
         // Stacked icons — second slightly offset behind first
         <div className="relative flex-shrink-0 w-10 h-10 mt-0.5">
-          <div className="absolute top-0 left-0 translate-x-2.5 translate-y-1.5 opacity-70">
-            <CategoryIcon icon={txnCategories[1]!.icon} color={txnCategories[1]!.color} size={28} />
+          <div className="absolute top-0 left-0 translate-x-2 translate-y-1 opacity-70">
+            <CategoryIcon icon={txnCategories[1]!.icon} color={txnCategories[1]!.color} size={20} />
           </div>
           <div className="absolute top-0 left-0">
-            <CategoryIcon icon={txnCategories[0]!.icon} color={txnCategories[0]!.color} size={32} />
+            <CategoryIcon icon={txnCategories[0]!.icon} color={txnCategories[0]!.color} size={28} />
           </div>
         </div>
       ) : primaryCategory ? (
         <div className="flex-shrink-0 mt-0.5">
-          <CategoryIcon icon={primaryCategory.icon} color={primaryCategory.color} size={36} />
+          <CategoryIcon icon={primaryCategory.icon} color={primaryCategory.color} size={28} />
         </div>
       ) : (
         <div className="w-10 h-10 rounded-full bg-muted flex-shrink-0 mt-0.5" />
@@ -65,7 +65,7 @@ export function TransactionItem({ transaction: t, onClick }: Props) {
         </p>
         <p className="text-xs truncate font-medium"
           style={{ color: account?.color || '#6b7280' }}>
-          {account?.name ?? ''}
+          {t.time && t.time !== '00:00' ? `${t.time} · ` : ''}{account?.name ?? ''}
         </p>
       </div>
 

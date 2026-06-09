@@ -37,10 +37,11 @@ export function useTransactionsByDate(): DateGroup[] {
           if (t.type === 'income') dailyNet += t.amount_base
           else if (t.type === 'expense') dailyNet -= t.amount_base
         }
+        const sorted = [...txns].sort((a, b) => (b.time || '00:00').localeCompare(a.time || '00:00'))
         return {
           date,
           label: formatGroupLabel(date),
-          transactions: txns,
+          transactions: sorted,
           dailyNet,
         }
       })

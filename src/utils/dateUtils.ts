@@ -8,6 +8,11 @@ export function todayISO(): string {
   return format(new Date(), 'yyyy-MM-dd')
 }
 
+/** Current wall-clock time as HH:MM */
+export function currentTimeHHMM(): string {
+  return format(new Date(), 'HH:mm')
+}
+
 export function formatDate(iso: string): string {
   if (!iso) return ''
   try {

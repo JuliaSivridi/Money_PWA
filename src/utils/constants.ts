@@ -6,19 +6,20 @@ export const SHEET_SETTINGS = 'settings'
 export const TRANSACTION_COLS = {
   ID: 0,
   DATE: 1,
-  TYPE: 2,
-  AMOUNT: 3,
-  CURRENCY: 4,
-  AMOUNT_BASE: 5,
-  ACCOUNT_ID: 6,
-  CATEGORY_IDS: 7,
-  TO_ACCOUNT_ID: 8,
-  TO_AMOUNT: 9,
-  TO_CURRENCY: 10,
-  DEBT_REF_ID: 11,
-  COMMENT: 12,
-  CREATED_AT: 13,
-  UPDATED_AT: 14,
+  TIME: 2,
+  TYPE: 3,
+  AMOUNT: 4,
+  CURRENCY: 5,
+  AMOUNT_BASE: 6,
+  ACCOUNT_ID: 7,
+  CATEGORY_IDS: 8,
+  TO_ACCOUNT_ID: 9,
+  TO_AMOUNT: 10,
+  TO_CURRENCY: 11,
+  DEBT_REF_ID: 12,
+  COMMENT: 13,
+  CREATED_AT: 14,
+  UPDATED_AT: 15,
 } as const
 
 export const ACCOUNT_COLS = {
@@ -48,7 +49,7 @@ export const CATEGORY_COLS = {
   UPDATED_AT: 10,
 } as const
 
-export const TRANSACTION_RANGE = `${SHEET_TRANSACTIONS}!A:O`
+export const TRANSACTION_RANGE = `${SHEET_TRANSACTIONS}!A:P`
 export const ACCOUNT_RANGE = `${SHEET_ACCOUNTS}!A:J`
 export const CATEGORY_RANGE = `${SHEET_CATEGORIES}!A:K`
 
