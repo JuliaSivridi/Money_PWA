@@ -64,9 +64,6 @@ export function CategoriesPage() {
     activeTab === 'expenses' ? c.is_expense : c.is_income
   )
 
-  // Sum of limits for the toggle label
-  const totalLimit = visibleCategories.reduce((s, c) => s + (c.expense_limit ?? 0), 0)
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
