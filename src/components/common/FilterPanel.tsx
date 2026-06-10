@@ -1,55 +1,20 @@
 import { CategoryIcon } from './CategoryIcon'
+import { DatePicker } from './DatePicker'
 import { useUIStore } from '@/store/uiStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
 
-/** Format local Date as YYYY-MM-DD without timezone shift */
 function localISO(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** Always returns first and last day of a month (0 = current, -1 = previous) */
 function getMonthRange(offset: 0 | -1): { from: string; to: string } {
   const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + offset   // JS handles month=-1 correctly (Dec of prev year)
+  const month = now.getMonth() + offset
   return {
-    from: localISO(new Date(year, month, 1)),
-    to:   localISO(new Date(year, month + 1, 0)),  // day 0 = last day of `month`
+    from: localISO(new Date(now.getFullYear(), month, 1)),
+    to:   localISO(new Date(now.getFullYear(), month + 1, 0)),
   }
-}
-
-/** Display YYYY-MM-DD as DD.MM.YYYY; empty → placeholder */
-function isoToDot(iso: string): string {
-  if (!iso || iso.length < 10) return ''
-  return `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`
-}
-
-/** Date picker: DD.MM.YYYY display over a hidden native date input */
-function DatePicker({ value, onChange, placeholder = 'DD.MM.YYYY' }: {
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-}) {
-  return (
-    <div className="relative flex-1">
-      <div className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background pointer-events-none min-h-[38px] flex items-center">
-        {value
-          ? <span>{isoToDot(value)}</span>
-          : <span className="text-muted-foreground">{placeholder}</span>
-        }
-      </div>
-      <input
-        type="date"
-        value={value}
-        onChange={e => { if (e.target.value) onChange(e.target.value) }}
-        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-      />
-    </div>
-  )
 }
 
 interface Props {
@@ -143,6 +108,18 @@ export function FilterPanel({ open, onClose }: Props) {
         <div className="flex justify-center pt-3 pb-2 shrink-0">
           <div className="w-10 h-1 rounded-full bg-muted" />
         </div>
+
+        {/* Clear — always visible at top so user never has to scroll */}
+        {hasFilters && (
+          <div className="shrink-0 px-4 pb-1">
+            <button
+              onClick={() => { clearFilters(); onClose() }}
+              className="text-sm text-destructive hover:text-destructive/80 font-medium"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
 
         {/* Scrollable content */}
         <div className="overflow-y-auto flex-1 px-4 pb-6 flex flex-col gap-5">
@@ -259,15 +236,6 @@ export function FilterPanel({ open, onClose }: Props) {
             </div>
           </section>
 
-          {/* Clear */}
-          {hasFilters && (
-            <button
-              onClick={() => { clearFilters(); onClose() }}
-              className="self-start text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
-            >
-              Clear all filters
-            </button>
-          )}
         </div>
       </div>
     </>

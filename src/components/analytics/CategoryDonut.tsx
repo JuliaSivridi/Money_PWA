@@ -19,6 +19,8 @@ interface Props {
   periodLabel?: string
 }
 
+const RADIAN = Math.PI / 180
+
 export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, monthCount = 1, todayFraction, periodLabel }: Props) {
   const { transactions } = useTransactionsStore()
   const { categories } = useCategoriesStore()
@@ -62,12 +64,35 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
 
   const displayTotal = isAverage ? total / monthCount : total
 
+  const renderPieLabel = (props: { cx: number; cy: number; midAngle: number; outerRadius: number; percent: number; index: number }) => {
+    if (props.percent <= 0.05) return null
+    const r = props.outerRadius + 26
+    const x = props.cx + r * Math.cos(-props.midAngle * RADIAN)
+    const y = props.cy + r * Math.sin(-props.midAngle * RADIAN)
+    const item = data[props.index]
+    const sz = 26
+    return (
+      <foreignObject key={`lbl-${item.id}`} x={x - sz / 2} y={y - sz / 2} width={sz} height={sz}>
+        <CategoryIcon icon={item.icon} color={item.color} size={14} />
+      </foreignObject>
+    )
+  }
+
   return (
     <div>
       <div className="relative">
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={220}>
           <PieChart>
-            <Pie data={data} dataKey="amount" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={2}>
+            <Pie
+              data={data}
+              dataKey="amount"
+              nameKey="name"
+              innerRadius={60}
+              outerRadius={90}
+              paddingAngle={2}
+              label={renderPieLabel}
+              labelLine={false}
+            >
               {data.map(entry => <Cell key={entry.id} fill={entry.color} />)}
             </Pie>
           </PieChart>
@@ -102,14 +127,14 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
                 )}
               </div>
               {item.limit > 0 && (
-                <div className="relative h-1 bg-muted rounded-full overflow-hidden">
+                <div className="relative h-1.5 bg-muted rounded-full">
                   <div
                     className={`h-full rounded-full ${exceeded ? 'bg-red-400' : 'bg-green-400'}`}
                     style={{ width: `${pct * 100}%` }}
                   />
                   {todayFraction !== undefined && (
                     <div
-                      className="absolute top-0 bottom-0 w-px bg-foreground/40"
+                      className="absolute -top-1.5 -bottom-1.5 w-0.5 bg-foreground/60 rounded-full"
                       style={{ left: `${todayFraction * 100}%` }}
                     />
                   )}

@@ -3,13 +3,13 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, ReferenceLine,
   Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
-import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Settings2, RotateCcw } from 'lucide-react'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { usePrefsStore } from '@/store/prefsStore'
 import { useExchangeRateStore } from '@/store/exchangeRateStore'
 import { AnalyticsAccountPicker } from './AnalyticsAccountPicker'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, subYears, startOfYear } from 'date-fns'
 import { formatAmount, convertToBase } from '@/utils/currencyUtils'
 
 interface Props {
@@ -18,6 +18,23 @@ interface Props {
 }
 
 type ShowState = { income: boolean; expenses: boolean; balance: boolean }
+type YearPeriod = 'this-year' | '1y' | '3y' | 'custom'
+
+function localISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const YEAR_CHIPS: { id: YearPeriod; label: string }[] = [
+  { id: 'this-year', label: 'This year' },
+  { id: '1y',        label: '1Y' },
+  { id: '3y',        label: '3Y' },
+]
+
+function chipRange(chip: YearPeriod, today: Date): { from: string; to: string } {
+  if (chip === 'this-year') return { from: localISO(startOfYear(today)), to: localISO(today) }
+  if (chip === '1y') return { from: localISO(subYears(today, 1)), to: localISO(today) }
+  return { from: localISO(subYears(today, 3)), to: localISO(today) }
+}
 
 const INCOME_COLOR  = 'hsl(142 71% 45%)'
 const EXPENSE_COLOR = 'hsl(0 72% 51%)'
@@ -84,12 +101,36 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
   const { accounts } = useAccountsStore()
   const { baseCurrency, analyticsAccountIds } = usePrefsStore()
   const { rates } = useExchangeRateStore()
-  const currentYear = new Date().getFullYear()
+  const today = new Date()
+  const currentYear = today.getFullYear()
   const [year, setYear] = useState(currentYear)
   const [show, setShow] = useState<ShowState>({ income: true, expenses: true, balance: true })
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [periodChip, setPeriodChip] = useState<YearPeriod>('this-year')
 
   const toggle = (key: keyof ShowState) => setShow(s => ({ ...s, [key]: !s[key] }))
+
+  const selectChip = (chip: YearPeriod) => {
+    setPeriodChip(chip)
+    if (chip !== 'custom') {
+      const r = chipRange(chip, today)
+      setYear(today.getFullYear())
+      // store from/to for filtering
+      setChipFrom(r.from)
+      setChipTo(r.to)
+    }
+  }
+
+  const [chipFrom, setChipFrom] = useState(() => chipRange('this-year', today).from)
+  const [chipTo,   setChipTo]   = useState(() => chipRange('this-year', today).to)
+
+  const resetToNow = () => {
+    setPeriodChip('this-year')
+    setYear(currentYear)
+    const r = chipRange('this-year', today)
+    setChipFrom(r.from)
+    setChipTo(r.to)
+  }
 
   // Only include accounts whose currency we can convert (base currency, or rate exists).
   // Without this guard, a ₽6,000,000 account with no rate would be treated as €6,000,000.
@@ -122,24 +163,30 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
     return net
   }, [transactions, balanceAccountIds])
 
-  // Build rows for the selected year (only past/current months)
+  // Build rows for the selected range
   const rows = useMemo(() => {
     const nowMonth = format(new Date(), 'yyyy-MM')
+    const from = periodChip === 'custom' ? `${year}-01` : chipFrom.slice(0, 7)
+    const to   = periodChip === 'custom' ? `${year}-12` : chipTo.slice(0, 7)
+    const multiYear = from.slice(0, 4) !== to.slice(0, 4)
     const result: { month: string; label: string; income: number; negExpense: number }[] = []
-    for (let i = 1; i <= 12; i++) {
-      const month = `${year}-${String(i).padStart(2, '0')}`
-      if (month > nowMonth) break
-      const label = format(parseISO(`${month}-01`), 'MMM')
+    let cur = from
+    while (cur <= to && cur <= nowMonth) {
+      const label = multiYear
+        ? format(parseISO(`${cur}-01`), "MMM ''yy")
+        : format(parseISO(`${cur}-01`), 'MMM')
       const income = transactions
-        .filter(t => t.type === 'income' && t.date.startsWith(month))
+        .filter(t => t.type === 'income' && t.date.startsWith(cur))
         .reduce((s, t) => s + t.amount_base, 0)
       const expense = transactions
-        .filter(t => t.type === 'expense' && t.date.startsWith(month))
+        .filter(t => t.type === 'expense' && t.date.startsWith(cur))
         .reduce((s, t) => s + t.amount_base, 0)
-      result.push({ month, label, income, negExpense: -expense })
+      result.push({ month: cur, label, income, negExpense: -expense })
+      const [y, m] = cur.split('-').map(Number)
+      cur = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
     }
     return result
-  }, [transactions, year])
+  }, [transactions, year, periodChip, chipFrom, chipTo])
 
   // Reconstruct end-of-month balances by walking backwards from currentBalance
   const data = useMemo((): TooltipEntry[] => {
@@ -174,19 +221,31 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
   return (
     <div className="px-4 py-4">
       {/* Year navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setYear(y => y - 1)} className="p-1 -ml-1 hover:text-primary transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={() => { setYear(y => y - 1); setPeriodChip('custom') }}
+          className="p-1 -ml-1 hover:text-primary transition-colors"
+        >
           <ChevronLeft size={20} />
         </button>
-        <span className="font-semibold text-base">{year}</span>
-        <div className="flex items-center gap-1">
+        <span className={`font-semibold text-base ${periodChip !== 'custom' ? 'text-muted-foreground' : ''}`}>{year}</span>
+        <div className="flex items-center gap-0.5">
           <button
-            onClick={() => setYear(y => y + 1)}
-            disabled={year >= currentYear}
+            onClick={() => { setYear(y => y + 1); setPeriodChip('custom') }}
+            disabled={year >= currentYear && periodChip === 'custom'}
             className="p-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight size={20} />
           </button>
+          {periodChip !== 'this-year' && (
+            <button
+              onClick={resetToNow}
+              className="p-1 text-muted-foreground hover:text-primary transition-colors"
+              title="Back to current period"
+            >
+              <RotateCcw size={15} />
+            </button>
+          )}
           <button
             onClick={() => setPickerOpen(true)}
             className={`p-1 -mr-1 transition-colors ${analyticsAccountIds.length > 0 ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
@@ -195,6 +254,23 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
             <Settings2 size={16} />
           </button>
         </div>
+      </div>
+
+      {/* Period chips */}
+      <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-none">
+        {YEAR_CHIPS.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => selectChip(id)}
+            className={`px-3 py-1 rounded-full border text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+              periodChip === id
+                ? 'bg-primary/15 text-primary border-primary'
+                : 'border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Series toggles */}

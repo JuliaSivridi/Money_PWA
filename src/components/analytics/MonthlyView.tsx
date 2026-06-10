@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
 import { CategoryDonut } from './CategoryDonut'
+import { DatePicker } from '@/components/common/DatePicker'
 import { useUIStore } from '@/store/uiStore'
 import { usePrefsStore } from '@/store/prefsStore'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { formatAmount } from '@/utils/currencyUtils'
-import { formatMonthYear } from '@/utils/dateUtils'
+import { formatMonthYear, currentMonthISO } from '@/utils/dateUtils'
 import { format, addMonths, subMonths, parseISO, getDaysInMonth } from 'date-fns'
 
 type TxType = 'expense' | 'income'
@@ -130,29 +131,30 @@ export function MonthlyView() {
           <ChevronLeft size={20} />
         </button>
         <p className="font-semibold">{formatMonthYear(analyticsMonth)}</p>
-        <button
-          onClick={() => setAnalyticsMonth(nextMonth)}
-          disabled={nextMonth > currentMonthStr}
-          className="p-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronRight size={20} />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => setAnalyticsMonth(nextMonth)}
+            disabled={nextMonth > currentMonthStr}
+            className="p-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={20} />
+          </button>
+          {analyticsMonth !== currentMonthStr && (
+            <button
+              onClick={() => { setAnalyticsMonth(currentMonthISO()); setMode('month'); setCustomMode(false) }}
+              className="p-1 text-muted-foreground hover:text-primary transition-colors"
+              title="Back to current month"
+            >
+              <RotateCcw size={15} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Always-visible date range */}
       <div className="flex gap-2 px-4 pt-3 pb-2">
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={e => handleDateFrom(e.target.value)}
-          className="flex-1 px-2 py-1.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-        />
-        <input
-          type="date"
-          value={dateTo}
-          onChange={e => handleDateTo(e.target.value)}
-          className="flex-1 px-2 py-1.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-        />
+        <DatePicker value={dateFrom} onChange={handleDateFrom} />
+        <DatePicker value={dateTo}   onChange={handleDateTo} />
       </div>
 
       {/* Period chips */}
@@ -189,9 +191,9 @@ export function MonthlyView() {
                 {t === 'expense' ? 'Expenses' : 'Income'}
               </span>
               <span className={`text-sm font-bold ${
-                active
-                  ? t === 'expense' ? 'text-red-500' : 'text-green-500'
-                  : 'text-muted-foreground'
+                t === 'income'
+                  ? 'text-green-500'
+                  : active ? 'text-red-500' : 'text-muted-foreground'
               }`}>
                 {formatAmount(amount, baseCurrency)}{isAverage && '/mo'}
               </span>
