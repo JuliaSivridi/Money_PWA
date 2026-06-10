@@ -12,9 +12,10 @@ interface Props { open: boolean; onClose: () => void }
 
 export function AnalyticsAccountPicker({ open, onClose }: Props) {
   const { accounts } = useAccountsStore()
-  const { analyticsAccountIds, setAnalyticsAccountIds } = usePrefsStore()
+  const { baseCurrency, analyticsAccountIds, setAnalyticsAccountIds } = usePrefsStore()
 
-  const active = accounts.filter(a => !a.archived)
+  // Only baseCurrency accounts make sense for balance trend (no FX conversion available)
+  const active = accounts.filter(a => !a.archived && a.currency === baseCurrency)
   const allSelected = analyticsAccountIds.length === 0
 
   const toggle = (id: string) => {
@@ -50,7 +51,7 @@ export function AnalyticsAccountPicker({ open, onClose }: Props) {
             Balance trend: accounts
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Select which accounts are included in the balance line
+            {baseCurrency} accounts only · other currencies excluded
           </p>
         </div>
 

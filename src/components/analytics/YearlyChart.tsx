@@ -89,22 +89,21 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
 
   const toggle = (key: keyof ShowState) => setShow(s => ({ ...s, [key]: !s[key] }))
 
-  // Accounts included in balance: user selection (explicit), else baseCurrency only to avoid FX inflation
-  const currentBalance = useMemo(() => {
-    const pool = accounts.filter(a => !a.archived)
-    const selected = analyticsAccountIds.length > 0
-      ? pool.filter(a => analyticsAccountIds.includes(a.id))
-      : pool.filter(a => a.currency === baseCurrency)
-    return selected.reduce((s, a) => s + a.balance, 0)
+  // Only baseCurrency accounts are eligible — summing across currencies without FX rates is meaningless.
+  // analyticsAccountIds narrows which baseCurrency accounts to include; empty = all of them.
+  const balanceAccountIds = useMemo(() => {
+    const pool = accounts.filter(a => !a.archived && a.currency === baseCurrency)
+    return analyticsAccountIds.length > 0
+      ? pool.filter(a => analyticsAccountIds.includes(a.id)).map(a => a.id)
+      : pool.map(a => a.id)
   }, [accounts, analyticsAccountIds, baseCurrency])
 
-  // Same account set used for both currentBalance and monthlyNet — must match
-  const balanceAccountIds = useMemo(() => {
-    const pool = accounts.filter(a => !a.archived)
-    return analyticsAccountIds.length > 0
-      ? analyticsAccountIds
-      : pool.filter(a => a.currency === baseCurrency).map(a => a.id)
-  }, [accounts, analyticsAccountIds, baseCurrency])
+  const currentBalance = useMemo(
+    () => accounts
+      .filter(a => balanceAccountIds.includes(a.id))
+      .reduce((s, a) => s + a.balance, 0),
+    [accounts, balanceAccountIds],
+  )
 
   // Monthly net filtered to the same accounts as currentBalance
   const monthlyNet = useMemo(() => {
