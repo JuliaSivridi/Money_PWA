@@ -86,8 +86,13 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
 
   return (
     <div>
-      <div className="relative" style={{ overflow: 'visible' }}>
-        <ResponsiveContainer width="100%" height={240}>
+      {/*
+        Height math: cy = 270/2 = 135. Icon distance = outerRadius(90) + offset(30) + icon-radius(13) = 133.
+        All icons fit within [2, 268] ⊂ [0, 270] → no SVG clipping.
+        z-10 ensures SVG labels render above the category list below.
+      */}
+      <div className="relative z-10" style={{ overflow: 'visible' }}>
+        <ResponsiveContainer width="100%" height={270}>
           <PieChart style={{ overflow: 'visible' }}>
             <Pie
               data={data}
@@ -95,6 +100,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
               nameKey="name"
               innerRadius={60}
               outerRadius={90}
+              cy={135}
               paddingAngle={2}
               stroke="none"
               label={renderPieLabel}
