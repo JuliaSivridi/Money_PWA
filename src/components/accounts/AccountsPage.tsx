@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { CreditCard, Wallet, PiggyBank, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react'
 import { AccountModal } from './AccountModal'
+import { AccountsFilterPanel } from './AccountsFilterPanel'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useTransactionsStore } from '@/store/transactionsStore'
+import { useUIStore } from '@/store/uiStore'
 import { formatAmount } from '@/utils/currencyUtils'
 import { DEFAULT_ENTITY_COLOR, ON_COLOR_TEXT, ICON_SIZES } from '@/utils/design'
 import { FAB } from '@/components/common/FAB'
@@ -54,11 +56,19 @@ function Section({ title, accounts, Icon, onEdit }: { title: string; accounts: A
 export function AccountsPage() {
   const { accounts } = useAccountsStore()
   const { transactions } = useTransactionsStore()
+  const { accountsSearch, accountsFilter, accountsFilterOpen, setAccountsFilterOpen } = useUIStore()
   const [createOpen, setCreateOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<Account | null>(null)
   const [showArchived, setShowArchived] = useState(false)
 
-  const active = accounts.filter(a => !a.archived)
+  const q = accountsSearch.trim().toLowerCase()
+  const allActive = accounts.filter(a => !a.archived)
+  const active = allActive.filter(a => {
+    if (q && !a.name.toLowerCase().includes(q)) return false
+    if (accountsFilter.types.length > 0 && !accountsFilter.types.includes(a.type)) return false
+    if (accountsFilter.currencies.length > 0 && !accountsFilter.currencies.includes(a.currency)) return false
+    return true
+  })
   const archived = accounts.filter(a => a.archived)
 
   // Debt section: open debt transactions grouped by counterpart
@@ -122,6 +132,8 @@ export function AccountsPage() {
       </div>
 
       <FAB onClick={() => setCreateOpen(true)} />
+
+      <AccountsFilterPanel open={accountsFilterOpen} onClose={() => setAccountsFilterOpen(false)} />
 
       <AccountModal
         open={createOpen || editAccount !== null}
