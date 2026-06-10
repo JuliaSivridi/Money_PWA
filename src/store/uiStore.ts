@@ -27,6 +27,9 @@ interface UIState {
   searchQuery: string
   categoriesPeriod: PeriodState
   categoriesFilterOpen: boolean
+  accountsSearch: string
+  accountsFilter: { types: string[]; currencies: string[] }
+  accountsFilterOpen: boolean
   analyticsMonth: string
   setView: (view: SelectedView) => void
   setSettingsOpen: (v: boolean) => void
@@ -37,6 +40,9 @@ interface UIState {
   setSearchQuery: (q: string) => void
   setCategoriesPeriod: (p: PeriodState) => void
   setCategoriesFilterOpen: (v: boolean) => void
+  setAccountsSearch: (q: string) => void
+  setAccountsFilter: (f: { types: string[]; currencies: string[] }) => void
+  setAccountsFilterOpen: (v: boolean) => void
   setAnalyticsMonth: (month: string) => void
 }
 
@@ -59,6 +65,9 @@ export const useUIStore = create<UIState>((set) => ({
   searchQuery: '',
   categoriesPeriod: { from: '', to: '' },
   categoriesFilterOpen: false,
+  accountsSearch: '',
+  accountsFilter: { types: [], currencies: [] },
+  accountsFilterOpen: false,
   analyticsMonth: currentMonthISO(),
   setView: (view) => set({ selectedView: view, sidebarOpen: false }),
   setSettingsOpen: (v) => set({ settingsOpen: v }),
@@ -69,5 +78,8 @@ export const useUIStore = create<UIState>((set) => ({
   setSearchQuery: (q) => set({ searchQuery: q }),
   setCategoriesPeriod: (p) => set({ categoriesPeriod: p }),
   setCategoriesFilterOpen: (v) => set({ categoriesFilterOpen: v }),
+  setAccountsSearch: (q) => set({ accountsSearch: q }),
+  setAccountsFilter: (f) => set({ accountsFilter: f }),
+  setAccountsFilterOpen: (v) => set({ accountsFilterOpen: v }),
   setAnalyticsMonth: (month) => set({ analyticsMonth: month }),
 }))

@@ -1,4 +1,4 @@
-import { Menu, LogOut, Settings, ChevronLeft, WifiOff, RefreshCw, AlertCircle, Search, SlidersHorizontal, Coins } from 'lucide-react'
+import { Menu, LogOut, Settings, ChevronLeft, WifiOff, RefreshCw, AlertCircle, Search, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -11,7 +11,7 @@ import { useSyncStore } from '@/store/syncStore'
 import { flush, clearLocalData, fullSync } from '@/services/syncService'
 
 /** Views that show a search field + filter button in the header */
-const SEARCHABLE: string[] = ['transactions', 'categories']
+const SEARCHABLE: string[] = ['transactions', 'categories', 'accounts']
 
 export function Header() {
   const { user, logout } = useAuthStore()
@@ -22,6 +22,8 @@ export function Header() {
     filterState,
     categoriesFilterOpen, setCategoriesFilterOpen,
     categoriesPeriod,
+    accountsSearch, setAccountsSearch,
+    accountsFilter, accountsFilterOpen, setAccountsFilterOpen,
   } = useUIStore()
   const { isOnline, isSyncing, pendingCount, syncError } = useSyncStore()
 
@@ -38,7 +40,10 @@ export function Header() {
     filterState.amountMin !== '' || filterState.amountMax !== ''
 
   const hasCatFilter = categoriesPeriod.from !== '' || categoriesPeriod.to !== ''
-  const filterActive = selectedView === 'transactions' ? hasFilters : hasCatFilter
+  const hasAccFilter = accountsFilter.types.length > 0 || accountsFilter.currencies.length > 0
+  const filterActive = selectedView === 'transactions' ? hasFilters
+    : selectedView === 'categories' ? hasCatFilter
+    : hasAccFilter
 
   return (
     <TooltipProvider>
@@ -52,13 +57,10 @@ export function Header() {
       ) : (
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden flex items-center gap-1.5 shrink-0"
+          className="md:hidden flex items-center justify-center w-9 h-9 shrink-0 text-muted-foreground hover:text-foreground"
           aria-label="Menu"
         >
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Coins size={15} className="text-primary-foreground" />
-          </div>
-          <Menu size={18} className="text-muted-foreground" />
+          <Menu size={20} />
         </button>
       )}
 
@@ -70,9 +72,9 @@ export function Header() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             type="search"
-            placeholder="Search by comment…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={selectedView === 'accounts' ? 'Search accounts…' : 'Search by comment…'}
+            value={selectedView === 'accounts' ? accountsSearch : searchQuery}
+            onChange={e => selectedView === 'accounts' ? setAccountsSearch(e.target.value) : setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-border bg-muted/40 focus:outline-none focus:border-primary focus:bg-background"
           />
         </div>
@@ -85,7 +87,8 @@ export function Header() {
         <button
           onClick={() => {
             if (selectedView === 'transactions') setFilterPanelOpen(!filterPanelOpen)
-            else setCategoriesFilterOpen(!categoriesFilterOpen)
+            else if (selectedView === 'categories') setCategoriesFilterOpen(!categoriesFilterOpen)
+            else setAccountsFilterOpen(!accountsFilterOpen)
           }}
           className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
             filterActive
