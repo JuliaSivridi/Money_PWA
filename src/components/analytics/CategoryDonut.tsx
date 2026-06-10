@@ -15,9 +15,11 @@ interface Props {
   monthCount?: number
   /** 0–1 fraction of current month elapsed; when set, shows a "today" marker on progress bars */
   todayFraction?: number
+  /** Short period label shown inside the donut, e.g. "avg /3M" or "1M" */
+  periodLabel?: string
 }
 
-export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, monthCount = 1, todayFraction }: Props) {
+export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, monthCount = 1, todayFraction, periodLabel }: Props) {
   const { transactions } = useTransactionsStore()
   const { categories } = useCategoriesStore()
   const { baseCurrency } = usePrefsStore()
@@ -72,10 +74,13 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center flex-col">
           <span className="text-lg font-bold">{formatAmount(displayTotal, baseCurrency)}</span>
-          <span className="text-sm text-muted-foreground">
-            {type === 'expense' ? 'expenses' : 'income'}
-            {isAverage && '/mo'}
-          </span>
+          {periodLabel ? (
+            <span className="text-xs text-muted-foreground font-medium">{periodLabel}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {type === 'expense' ? 'expenses' : 'income'}
+            </span>
+          )}
         </div>
       </div>
 
