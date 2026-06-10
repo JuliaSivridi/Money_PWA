@@ -98,16 +98,25 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
     return selected.reduce((s, a) => s + a.balance, 0)
   }, [accounts, analyticsAccountIds, baseCurrency])
 
-  // Monthly net (income/expense only, transfers excluded) for balance reconstruction
+  // Same account set used for both currentBalance and monthlyNet — must match
+  const balanceAccountIds = useMemo(() => {
+    const pool = accounts.filter(a => !a.archived)
+    return analyticsAccountIds.length > 0
+      ? analyticsAccountIds
+      : pool.filter(a => a.currency === baseCurrency).map(a => a.id)
+  }, [accounts, analyticsAccountIds, baseCurrency])
+
+  // Monthly net filtered to the same accounts as currentBalance
   const monthlyNet = useMemo(() => {
     const net: Record<string, number> = {}
     for (const t of transactions) {
       if (t.type !== 'income' && t.type !== 'expense') continue
+      if (!balanceAccountIds.includes(t.account_id)) continue
       const m = t.date.slice(0, 7)
       net[m] = (net[m] ?? 0) + (t.type === 'income' ? t.amount_base : -t.amount_base)
     }
     return net
-  }, [transactions])
+  }, [transactions, balanceAccountIds])
 
   // Build rows for the selected year (only past/current months)
   const rows = useMemo(() => {
