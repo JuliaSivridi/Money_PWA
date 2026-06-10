@@ -89,14 +89,14 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
 
   const toggle = (key: keyof ShowState) => setShow(s => ({ ...s, [key]: !s[key] }))
 
-  // Accounts included in balance: user selection or all non-archived
+  // Accounts included in balance: user selection (explicit), else baseCurrency only to avoid FX inflation
   const currentBalance = useMemo(() => {
     const pool = accounts.filter(a => !a.archived)
     const selected = analyticsAccountIds.length > 0
       ? pool.filter(a => analyticsAccountIds.includes(a.id))
-      : pool
+      : pool.filter(a => a.currency === baseCurrency)
     return selected.reduce((s, a) => s + a.balance, 0)
-  }, [accounts, analyticsAccountIds])
+  }, [accounts, analyticsAccountIds, baseCurrency])
 
   // Monthly net (income/expense only, transfers excluded) for balance reconstruction
   const monthlyNet = useMemo(() => {

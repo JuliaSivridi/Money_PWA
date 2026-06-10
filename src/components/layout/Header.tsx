@@ -11,7 +11,7 @@ import { useSyncStore } from '@/store/syncStore'
 import { flush, clearLocalData, fullSync } from '@/services/syncService'
 
 /** Views that show a search field + filter button in the header */
-const SEARCHABLE: string[] = ['transactions', 'categories', 'accounts']
+const SEARCHABLE: string[] = ['transactions']
 
 export function Header() {
   const { user, logout } = useAuthStore()

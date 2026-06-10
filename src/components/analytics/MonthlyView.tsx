@@ -172,8 +172,8 @@ export function MonthlyView() {
         ))}
       </div>
 
-      {/* Full-width Expenses / Income toggle with totals */}
-      <div className="flex border-t border-b mx-0">
+      {/* Full-width Expenses / Income toggle with totals — single line */}
+      <div className="flex border-t border-b">
         {(['expense', 'income'] as const).map(t => {
           const amount = t === 'expense' ? displayExpense : displayIncome
           const active = txType === t
@@ -181,20 +181,19 @@ export function MonthlyView() {
             <button
               key={t}
               onClick={() => setTxType(t)}
-              className={`flex-1 py-3 flex flex-col items-center gap-0.5 border-b-2 transition-colors ${
+              className={`flex-1 py-2.5 flex items-center justify-center gap-2 border-b-2 transition-colors ${
                 active ? 'border-primary' : 'border-transparent'
               }`}
             >
-              <span className={`text-xs font-semibold uppercase tracking-wide ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <span className={`text-sm font-medium ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {t === 'expense' ? 'Expenses' : 'Income'}
               </span>
-              <span className={`text-base font-bold ${
+              <span className={`text-sm font-bold ${
                 active
                   ? t === 'expense' ? 'text-red-500' : 'text-green-500'
                   : 'text-muted-foreground'
               }`}>
-                {formatAmount(amount, baseCurrency)}
-                {isAverage && <span className="text-xs font-normal">/mo</span>}
+                {formatAmount(amount, baseCurrency)}{isAverage && '/mo'}
               </span>
             </button>
           )
