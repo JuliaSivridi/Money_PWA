@@ -227,8 +227,8 @@
   <div class="subtitle">Technical Specification</div>
   <div class="accent-line"></div>
   <div class="meta">
-    <strong>Version</strong> 1.0<br>
-    <strong>Date</strong> 2026-06-09<br>
+    <strong>Version</strong> 1.1<br>
+    <strong>Date</strong> 2026-06-10<br>
     <strong>Repository</strong> D:\Projects\Money-PWA<br>
     <strong>Stack</strong> React 19 · TypeScript 5.9 · Vite 7 · Zustand 5 · Dexie 4 · Google Sheets API v4
   </div>
@@ -426,9 +426,9 @@ Money-PWA/<br>
 │   ├── <span class="blue">components/transactions/</span>       <span class="dim">TransactionList, TransactionModal, TransactionItem</span><br>
 │   ├── <span class="blue">components/accounts/</span>           <span class="dim">AccountsPage, AccountModal</span><br>
 │   ├── <span class="blue">components/categories/</span>         <span class="dim">CategoriesPage, CategoryModal</span><br>
-│   ├── <span class="blue">components/analytics/</span>          <span class="dim">AnalyticsPage, MonthBarChart, CategoryDonut</span><br>
+│   ├── <span class="blue">components/analytics/</span>          <span class="dim">AnalyticsPage, YearlyChart, MonthlyView, CategoryDonut, MonthBarChart, IncomeExpenseChart, BalanceChart, AnalyticsAccountPicker</span><br>
 │   ├── <span class="blue">components/settings/</span>           <span class="dim">SettingsPage</span><br>
-│   ├── <span class="blue">components/common/</span>             <span class="dim">CategoryIcon, ColorPicker, IconPicker, NumericKeyboard, FilterBar, ConfirmDialog</span><br>
+│   ├── <span class="blue">components/common/</span>             <span class="dim">CategoryIcon, ColorPicker, IconPicker, NumericKeyboard, FAB, FilterBar, FilterPanel, DatePicker, ConfirmDialog</span><br>
 │   ├── <span class="blue">components/ui/</span>                 <span class="dim">Radix-based shadcn/ui primitives</span><br>
 │   ├── <span class="blue">types/</span>                         <span class="dim">Transaction, Account, Category, QueueItem, DebtSummary, sheets</span><br>
 │   └── <span class="blue">utils/</span>                         <span class="dim">constants, sheetsMapper, currencyUtils, dateUtils, uuid</span>
@@ -796,11 +796,39 @@ set({ TABLE: (await db.TABLE.toArray()).sort(...) })</code></pre>
 
   <h2 id="s9-8">9.8 AnalyticsPage</h2>
   <p><strong>File:</strong> <code>src/components/analytics/AnalyticsPage.tsx</code></p>
+  <p>Three sub-components stacked vertically: <strong>MonthBarChart</strong> → <strong>YearlyChart</strong> → <strong>MonthlyView</strong>.</p>
   <ul>
-    <li><strong>MonthBarChart:</strong> 12-month trailing, height 120px, bars <code>radius [3,3,0,0]</code>; active month full primary color, others 35% opacity; clickable</li>
-    <li><strong>Month selector:</strong> ChevronLeft / ChevronRight; future months disabled</li>
-    <li><strong>CategoryDonut:</strong> PieChart <code>innerRadius=60 outerRadius=90 paddingAngle=2</code>, height 200px; primary category only (index 0) — avoids double-counting; spend-vs-limit progress bars below</li>
-    <li><strong>Empty state:</strong> <code>BarChart2</code> 40px, "No data for this month"</li>
+    <li><strong>MonthBarChart:</strong> 12-month trailing expense bar, height 120px; active month full primary, others 35% opacity; click sets <code>analyticsMonth</code></li>
+  </ul>
+
+  <h3>YearlyChart — <code>src/components/analytics/YearlyChart.tsx</code></h3>
+  <ul>
+    <li><code>ComposedChart</code>: income bars (green) + negExpense bars (red) + balance <code>Line</code> (primary color)</li>
+    <li>Year nav <code>← 2025 →</code>: <code>goYear(delta)</code> sets full calendar year in date fields</li>
+    <li>Date fields always visible — two <code>DatePicker</code> components; editing sets chip to <code>'custom'</code></li>
+    <li>Period chips: <code>This year</code> / <code>1Y</code> / <code>2Y</code> / <code>3Y</code> — fill date fields relative to today. <code>RotateCcw</code> appears when not on default</li>
+    <li>Series toggles: Income / Expenses / Balance (independent)</li>
+    <li>Balance line reconstructed backwards from <code>currentBalance</code> via <code>monthlyNet</code>. <code>AnalyticsAccountPicker</code> (gear icon) filters which accounts feed the balance</li>
+  </ul>
+
+  <h3>MonthlyView — <code>src/components/analytics/MonthlyView.tsx</code></h3>
+  <ul>
+    <li>Month nav <code>← May 2026 →</code> updates <code>analyticsMonth</code></li>
+    <li>Date fields always visible — two <code>DatePicker</code>; editing sets <code>customMode = true</code></li>
+    <li>Period chips: <code>Month</code> / <code>3M</code> / <code>6M</code> / <code>Year</code> — anchor to end of <code>dateTo</code>; <code>RotateCcw</code> next to date fields</li>
+    <li>Expenses / Income toggle tab bar; income always <code>text-green-500</code></li>
+    <li>Passes <code>dateFrom</code>, <code>dateTo</code>, <code>isAverage</code>, <code>monthCount</code>, <code>todayFraction</code>, <code>periodLabel</code> to <code>CategoryDonut</code></li>
+  </ul>
+
+  <h3>CategoryDonut — <code>src/components/analytics/CategoryDonut.tsx</code></h3>
+  <ul>
+    <li><code>PieChart</code> height=290, <code>Pie cy=145 innerRadius=60 outerRadius=90 paddingAngle=2 stroke="none"</code></li>
+    <li>Icon labels: pure SVG <code>&lt;g&gt;</code> — <code>&lt;circle r=13&gt;</code> + <code>&lt;LucideIcon x y size=18&gt;</code>; shown only for segments &gt;3%</li>
+    <li>SVG clearance: icon extent [145±133] = [12, 278] ⊂ [0, 290] — 12px each side</li>
+    <li>Primary category only (<code>category_ids[0]</code>) — avoids double-counting</li>
+    <li>Centre: total / average + period abbreviation (e.g. <code>3M</code>, <code>avg /6M</code>)</li>
+    <li>Category list: icon | name | amount | ✓/✗ + limit; progress bar; today marker (<code>w-0.5</code>, <code>top: -0.3rem</code>) in single-current-month mode</li>
+    <li>Empty state: <code>BarChart2</code> 40px, "No data for this period"</li>
   </ul>
 
   <h2 id="s9-9">9.9 SettingsPage</h2>
@@ -846,7 +874,12 @@ set({ TABLE: (await db.TABLE.toArray()).sort(...) })</code></pre>
 
   <h2 id="s10-7">10.7 AmountField / DateInput</h2>
   <p><strong>AmountField:</strong> <code>w-28 shrink-0 text-right border rounded-md cursor-pointer select-none</code>. Active state: <code>border-ring ring-2 ring-ring</code>.</p>
-  <p><strong>DateInput:</strong> Styled div showing <code>DD.MM.YYYY</code> with invisible native <code>&lt;input type="date"&gt;</code> absolutely positioned over it (opacity-0, full size). Ensures native date picker on all platforms.</p>
+  <p><strong>DateInput</strong> (TransactionModal internal): shows <code>DD.MM.YYYY</code> + calendar SVG icon. Hidden <code>&lt;input type="date"&gt;</code> overlays the div at <code>absolute inset-0 opacity-0</code>. <code>onClick</code> → <code>inputRef.current?.showPicker()</code> (native calendar on desktop); falls back to <code>.focus()</code> via try/catch.</p>
+  <p>The shared <strong>DatePicker</strong> component (<code>src/components/common/DatePicker.tsx</code>) uses the same pattern and is reused in FilterPanel, MonthlyView, and YearlyChart.</p>
+
+  <h2 id="s10-8">10.8 FilterPanel</h2>
+  <p><strong>File:</strong> <code>src/components/common/FilterPanel.tsx</code></p>
+  <p>Full-height filter panel. "Clear all filters" fixed at top (above scrollable content). Uses <code>DatePicker</code> for From / To date range. Accounts, transaction types, and categories are chip-based multi-select.</p>
 
   <!-- ─────────────────────────── S11 ─────────────────────────── -->
   <h1 id="s11">11. Theme &amp; Colors</h1>

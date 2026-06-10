@@ -1,6 +1,6 @@
 # Money PWA — Technical Specification
 
-**Version:** 1.0 · **Date:** 2026-06-09  
+**Version:** 1.1 · **Date:** 2026-06-10  
 **Repository:** D:\Projects\Money-PWA  
 **Stack:** React 19 · TypeScript 5.9 · Vite 7 · Zustand 5 · Dexie 4 · Google Sheets API v4
 
@@ -213,9 +213,14 @@ Money-PWA/
 │   │   │   └── CategoryModal.tsx     Create/edit: icon+color preview, name, expense/income limits
 │   │   │
 │   │   ├── analytics/
-│   │   │   ├── AnalyticsPage.tsx     MonthBarChart + month selector + CategoryDonut
-│   │   │   ├── MonthBarChart.tsx     12-month trailing bar chart (Recharts, h=120)
-│   │   │   └── CategoryDonut.tsx     PieChart + category list with spend-vs-limit bars
+│   │   │   ├── AnalyticsPage.tsx          MonthBarChart + YearlyChart + MonthlyView
+│   │   │   ├── YearlyChart.tsx            ComposedChart: income/expense bars + balance line; date pickers + period chips
+│   │   │   ├── MonthlyView.tsx            Month nav + DatePicker fields + period chips + CategoryDonut
+│   │   │   ├── CategoryDonut.tsx          PieChart with SVG icon labels + category list with spend-vs-limit bars
+│   │   │   ├── MonthBarChart.tsx          12-month trailing expense bar chart (Recharts, h=120)
+│   │   │   ├── IncomeExpenseChart.tsx     Standalone income vs expense bar chart
+│   │   │   ├── BalanceChart.tsx           Standalone balance line chart
+│   │   │   └── AnalyticsAccountPicker.tsx Account filter for YearlyChart balance calculation
 │   │   │
 │   │   ├── settings/
 │   │   │   └── SettingsPage.tsx      Switch spreadsheet, set base currency
@@ -225,7 +230,10 @@ Money-PWA/
 │   │   │   ├── ColorPicker.tsx       22-swatch grid (11 cols, 28px circles)
 │   │   │   ├── IconPicker.tsx        37 lucide icons, searchable, 6-col grid
 │   │   │   ├── NumericKeyboard.tsx   4×3 grid (digits + . + ⌫), max 2 decimals
+│   │   │   ├── FAB.tsx               Floating action button (fixed bottom-right, primary)
 │   │   │   ├── FilterBar.tsx         Active filter chips row; hidden when no filters
+│   │   │   ├── FilterPanel.tsx       Full filter panel with DatePicker date range fields
+│   │   │   ├── DatePicker.tsx        DD.MM.YYYY display + showPicker() + calendar icon
 │   │   │   ├── ConfirmDialog.tsx     Generic delete-confirm dialog
 │   │   │   ├── SyncStatusBanner.tsx  Sync status display (imported, not used in AppShell)
 │   │   │   └── Toast.tsx             Toast notification component
@@ -825,30 +833,68 @@ Active item: `bg-accent text-accent-foreground`. Inactive: `text-muted-foregroun
 
 **File:** `src/components/analytics/AnalyticsPage.tsx`
 
-**Layout:**
-1. `MonthBarChart` (12-month trailing)
-2. Month selector row: `ChevronLeft` / month name / `ChevronRight` (disabled for future months)
-3. `CategoryDonut` for selected month
+**Layout (top to bottom):**
+1. `MonthBarChart` — 12-month trailing expense bar (tapping a bar sets `analyticsMonth`)
+2. `YearlyChart` — income/expense/balance composed chart with date pickers
+3. `MonthlyView` — month navigation + category donut + breakdown list
 
-**State:** `analyticsMonth` in `uiStore`, default `currentMonthISO()` (format `yyyy-MM`).
+**State:** `analyticsMonth` in `uiStore`, default `currentMonthISO()` (format `yyyy-MM`). Clicking a bar in MonthBarChart or YearlyChart sets `analyticsMonth`; MonthlyView nav arrows do the same.
+
+---
 
 #### MonthBarChart
 
 - `BarChart` 120px height, 12 bars for trailing 12 months
 - `XAxis`: `format(d, 'MMM')` labels; no axis lines; `font-size: 11`, `fill: hsl(var(--muted-foreground))`
-- Selected month bar fill: `hsl(var(--primary))` (full opacity)
-- Other bars: `hsl(var(--primary) / 0.35)`
+- Selected month bar fill: `hsl(var(--primary))` (full opacity); others at 35% opacity
 - Click on bar → `setAnalyticsMonth(month)`
 - Data: expense transactions only, sum `amount_base`
 
+---
+
+#### YearlyChart
+
+**File:** `src/components/analytics/YearlyChart.tsx`
+
+- `ComposedChart` with `Bar` (income + negExpense) and `Line` (balance)
+- **Year navigation** `← 2025 →` header — `goYear(delta)` sets full calendar year in date fields
+- **Date fields** (always visible) — two `DatePicker` components for From / To; editing sets chip to `'custom'`
+- **Period chips** — `This year` / `1Y` / `2Y` / `3Y`; each fills date fields relative to today. `RotateCcw` appears when not on default chip
+- **Series toggles** — Income / Expenses / Balance (each independently toggleable)
+- **Balance line** reconstructed backwards from `currentBalance` using `monthlyNet` per month. `AnalyticsAccountPicker` (gear icon) selects which accounts are included
+- `INCOME_COLOR = 'hsl(142 71% 45%)'`; `EXPENSE_COLOR = 'hsl(0 72% 51%)'`
+- Click on a bar → `onMonthClick(month)` → `analyticsMonth` updated
+
+---
+
+#### MonthlyView
+
+**File:** `src/components/analytics/MonthlyView.tsx`
+
+- **Month navigation** `← May 2026 →` — updates `analyticsMonth` in `uiStore`
+- **Date fields** (always visible) — two `DatePicker` components; editing sets `customMode = true`
+- **Period chips** — `Month` / `3M` / `6M` / `Year`; always anchor to end of `dateTo`:
+  - `Month` = single calendar month
+  - `3M` / `6M` = rolling N months ending at dateTo
+  - `Year` = rolling 12 months ending at dateTo
+- **`RotateCcw`** next to date fields; visible when `dateFrom / dateTo ≠ current month defaults`
+- **Expenses / Income toggle** — full-width tab bar; income amount always `text-green-500`
+- `CategoryDonut` receives `dateFrom`, `dateTo`, `isAverage`, `monthCount`, `todayFraction`, `periodLabel`
+
+---
+
 #### CategoryDonut
 
-- `PieChart` 200px height; `Pie` `innerRadius=60 outerRadius=90 paddingAngle=2`
+**File:** `src/components/analytics/CategoryDonut.tsx`
+
+- `PieChart` height=290, `Pie` `cy=145 innerRadius=60 outerRadius=90 paddingAngle=2 stroke="none"`
+- **Icon labels** rendered as pure SVG `<g>` elements (no `foreignObject`): `<circle r=13 fill=color>` + `<LucideIcon x y size=18>`; shown only for segments > 3%
+- SVG viewport math: icon extent = `cy ± (outerRadius + 30 + 13)` = `[12, 278]` ⊂ `[0, 290]` → 12px clearance each side
 - Only **primary** category (`category_ids[0]`) used per transaction (avoids double-counting)
-- Centre text: total expense amount + "expenses" label
-- Legend below: category icon + name + amount + optional limit check (✓/✗ + limit amount)
-- Limit progress bar: `h-1 bg-muted rounded-full`; fill `bg-green-400` (within) or `bg-red-400` (exceeded)
-- **Empty state:** `BarChart2` icon (40px, opacity-20), "No data for this month"
+- Centre text: total / average in base currency + period abbreviation (e.g. `3M`, `avg /6M`)
+- Category list below: icon | name | amount | limit status (✓/✗) + limit value; thin progress bar
+- `todayFraction` marker: `w-0.5 bg-foreground/60`, `top: '-0.3rem'`, shown in single-current-month view only
+- **Empty state:** `BarChart2` icon (40px, opacity-20), "No data for this period"
 
 ---
 
@@ -989,8 +1035,16 @@ function AmountField({ value, active, onActivate, placeholder }: {
 ```typescript
 function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void })
 ```
-- Shows formatted value `DD.MM.YYYY` over an invisible `<input type="date">` (absolute-positioned, opacity-0)
-- Allows native date picker on all platforms
+- Shows formatted value `DD.MM.YYYY` (or placeholder) + calendar SVG icon on the right
+- Hidden `<input type="date">` positioned `absolute inset-0 opacity-0` overlays the whole div
+- `onClick` → `inputRef.current?.showPicker()` (opens native calendar on desktop); falls back to `.focus()` via try/catch
+- Shared `DatePicker` component (`src/components/common/DatePicker.tsx`) follows the same pattern and is used in FilterPanel, MonthlyView, and YearlyChart
+
+### 10.8 FilterPanel
+
+**File:** `src/components/common/FilterPanel.tsx`
+
+Full-height filter panel with "Clear all filters" fixed at top (above scrollable filter sections). Uses `DatePicker` for From / To date range. Accounts, types, and categories are chip-based multi-select.
 
 ---
 
