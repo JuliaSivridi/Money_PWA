@@ -39,7 +39,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
     const total = Array.from(byCategory.values()).reduce((s, v) => s + v, 0)
     const data = categories
       .filter(c => byCategory.has(c.id))
-      .sort((a, b) => (byCategory.get(b.id) ?? 0) - (byCategory.get(a.id) ?? 0))
+      .sort((a, b) => a.sort_order - b.sort_order)
       .map(c => ({
         id: c.id,
         name: c.name,
