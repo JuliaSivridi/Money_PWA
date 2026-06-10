@@ -3,10 +3,11 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, ReferenceLine,
   Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { usePrefsStore } from '@/store/prefsStore'
+import { AnalyticsAccountPicker } from './AnalyticsAccountPicker'
 import { format, parseISO } from 'date-fns'
 import { formatAmount } from '@/utils/currencyUtils'
 
@@ -80,18 +81,22 @@ function SeriesToggle({
 export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
   const { transactions } = useTransactionsStore()
   const { accounts } = useAccountsStore()
-  const { baseCurrency } = usePrefsStore()
+  const { baseCurrency, analyticsAccountIds } = usePrefsStore()
   const currentYear = new Date().getFullYear()
   const [year, setYear] = useState(currentYear)
   const [show, setShow] = useState<ShowState>({ income: true, expenses: true, balance: true })
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const toggle = (key: keyof ShowState) => setShow(s => ({ ...s, [key]: !s[key] }))
 
-  // Only sum accounts in baseCurrency to avoid raw FX number inflation
-  const currentBalance = useMemo(
-    () => accounts.filter(a => !a.archived && a.currency === baseCurrency).reduce((s, a) => s + a.balance, 0),
-    [accounts, baseCurrency],
-  )
+  // Accounts included in balance: user selection or all non-archived
+  const currentBalance = useMemo(() => {
+    const pool = accounts.filter(a => !a.archived)
+    const selected = analyticsAccountIds.length > 0
+      ? pool.filter(a => analyticsAccountIds.includes(a.id))
+      : pool
+    return selected.reduce((s, a) => s + a.balance, 0)
+  }, [accounts, analyticsAccountIds])
 
   // Monthly net (income/expense only, transfers excluded) for balance reconstruction
   const monthlyNet = useMemo(() => {
@@ -161,13 +166,22 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
           <ChevronLeft size={20} />
         </button>
         <span className="font-semibold text-base">{year}</span>
-        <button
-          onClick={() => setYear(y => y + 1)}
-          disabled={year >= currentYear}
-          className="p-1 -mr-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronRight size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setYear(y => y + 1)}
+            disabled={year >= currentYear}
+            className="p-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <button
+            onClick={() => setPickerOpen(true)}
+            className={`p-1 -mr-1 transition-colors ${analyticsAccountIds.length > 0 ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            title="Balance accounts"
+          >
+            <Settings2 size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Series toggles */}
@@ -235,8 +249,11 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
       </ResponsiveContainer>
 
       <p className="text-xs text-muted-foreground mt-1 text-center">
-        Tap a month · Balance: {baseCurrency} accounts only
+        Tap a month to view details
+        {analyticsAccountIds.length > 0 && ` · Balance: ${analyticsAccountIds.length} account${analyticsAccountIds.length > 1 ? 's' : ''}`}
       </p>
+
+      <AnalyticsAccountPicker open={pickerOpen} onClose={() => setPickerOpen(false)} />
     </div>
   )
 }

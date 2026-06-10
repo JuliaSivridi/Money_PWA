@@ -4,6 +4,7 @@ import type { SheetsGetResponse } from '@/types/sheets'
 export interface Settings {
   base_currency?: string
   exchange_rates?: Record<string, number>
+  analytics_account_ids?: string[]
 }
 
 export async function loadSettings(): Promise<Settings> {
