@@ -80,9 +80,9 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
 
   return (
     <div>
-      <div className="relative pt-8">
+      <div className="relative">
         <ResponsiveContainer width="100%" height={240}>
-          <PieChart>
+          <PieChart style={{ overflow: 'visible' }}>
             <Pie
               data={data}
               dataKey="amount"
@@ -110,7 +110,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
         </div>
       </div>
 
-      <div className="mt-8 space-y-2 px-4">
+      <div className="mt-2 space-y-2 px-4">
         {data.map(item => {
           const displayAmount = isAverage ? item.amount / monthCount : item.amount
           const pct = item.limit > 0 ? Math.min(displayAmount / item.limit, 1) : 0

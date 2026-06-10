@@ -128,6 +128,16 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
 
   const activeAccounts = accounts.filter(a => !a.archived)
 
+  // For account selects: include an archived account if it's already the current value
+  // (historical transactions may reference archived accounts)
+  const accountsForField = (currentId: string) => {
+    if (currentId && !activeAccounts.find(a => a.id === currentId)) {
+      const archived = accounts.find(a => a.id === currentId)
+      if (archived) return [...activeAccounts, archived]
+    }
+    return activeAccounts
+  }
+
   const { handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -298,33 +308,34 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
   )
 
   const accountSelect = (name: 'account_id' | 'to_account_id', placeholder: string) => (
-    <Controller name={name} control={control} render={({ field }) => (
-      <Select value={field.value} onValueChange={field.onChange}>
-        <SelectTrigger>
-          <SelectValue placeholder={placeholder}>
-            {field.value && (() => {
-              const acc = activeAccounts.find(a => a.id === field.value)
-              return acc ? (
+    <Controller name={name} control={control} render={({ field }) => {
+      const list = accountsForField(field.value)
+      const acc = accounts.find(a => a.id === field.value)
+      return (
+        <Select value={field.value} onValueChange={field.onChange}>
+          <SelectTrigger>
+            <SelectValue placeholder={placeholder}>
+              {acc && (
                 <span className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: acc.color || DEFAULT_ENTITY_COLOR }} />
-                  {acc.name}
+                  {acc.name}{acc.archived ? ' (archived)' : ''}
                 </span>
-              ) : null
-            })()}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {activeAccounts.map(a => (
-            <SelectItem key={a.id} value={a.id}>
-              <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: a.color || DEFAULT_ENTITY_COLOR }} />
-                {a.name}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    )} />
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {list.map(a => (
+              <SelectItem key={a.id} value={a.id}>
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: a.color || DEFAULT_ENTITY_COLOR }} />
+                  {a.name}{a.archived ? ' (archived)' : ''}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )
+    }} />
   )
 
   return (
