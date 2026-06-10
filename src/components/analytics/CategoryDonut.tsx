@@ -5,7 +5,10 @@ import { useCategoriesStore } from '@/store/categoriesStore'
 import { usePrefsStore } from '@/store/prefsStore'
 import { formatAmount } from '@/utils/currencyUtils'
 import { CategoryIcon } from '@/components/common/CategoryIcon'
+import * as lucideIcons from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { BarChart2 } from 'lucide-react'
+import { ON_COLOR_TEXT } from '@/utils/design'
 
 interface Props {
   type: 'expense' | 'income'
@@ -70,11 +73,14 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
     const x = props.cx + r * Math.cos(-props.midAngle * RADIAN)
     const y = props.cy + r * Math.sin(-props.midAngle * RADIAN)
     const item = data[props.index]
-    const sz = 26
+    const IconComp = ((lucideIcons as unknown) as Record<string, LucideIcon>)[item.icon] ?? lucideIcons.Tag
+    const sz = 18
+    const boxR = 13
     return (
-      <foreignObject key={`lbl-${item.id}`} x={x - sz / 2} y={y - sz / 2} width={sz} height={sz}>
-        <CategoryIcon icon={item.icon} color={item.color} size={14} />
-      </foreignObject>
+      <g key={`lbl-${item.id}`}>
+        <circle cx={x} cy={y} r={boxR} fill={item.color} />
+        <IconComp size={sz} color={ON_COLOR_TEXT} strokeWidth={2} x={x - sz / 2} y={y - sz / 2} />
+      </g>
     )
   }
 
@@ -82,7 +88,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
     <div>
       <div className="relative">
         <ResponsiveContainer width="100%" height={240}>
-          <PieChart style={{ overflow: 'visible' }}>
+          <PieChart>
             <Pie
               data={data}
               dataKey="amount"
