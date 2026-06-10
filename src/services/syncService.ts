@@ -2,7 +2,8 @@ import { fetchAllTransactions, appendTransaction, updateTransaction as apiUpdate
 import { fetchAllAccounts, appendAccount, updateAccount as apiUpdateAccount, ensureAccountHeader } from '@/api/accountsApi'
 import { fetchAllCategories, appendCategory, updateCategory as apiUpdateCategory, ensureCategoryHeader } from '@/api/categoriesApi'
 import { getPending, markProcessing, markDone, markFailed, getQueueLength } from '@/services/offlineQueue'
-import { invalidateRowCache } from '@/api/sheetsClient'
+import { invalidateRowCache, deleteRowByEntityId } from '@/api/sheetsClient'
+import { SHEET_TRANSACTIONS } from '@/utils/constants'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
@@ -18,6 +19,7 @@ async function processQueueItem(item: Awaited<ReturnType<typeof getPending>>[num
   if (entityType === 'transaction') {
     const t = payload as unknown as Transaction
     if (operationType === 'create') await appendTransaction(t)
+    else if (operationType === 'delete') await deleteRowByEntityId(SHEET_TRANSACTIONS, item.entityId)
     else await apiUpdateTransaction(t)
   } else if (entityType === 'account') {
     const a = payload as unknown as Account
@@ -64,13 +66,18 @@ export async function flush(): Promise<void> {
 }
 
 export async function pull(): Promise<void> {
+  // Another device may have reordered/removed rows since we cached their numbers
+  invalidateRowCache()
   const [transactions, accounts, categories] = await Promise.all([
     fetchAllTransactions(),
     fetchAllAccounts(),
     fetchAllCategories(),
   ])
+  // Entities with unsent local changes (e.g. a create that failed and awaits
+  // retry) must not be deleted/overwritten by the pull — the local edit wins.
+  const pendingIds = new Set((await getPending()).map(i => i.entityId))
   await Promise.all([
-    useTransactionsStore.getState().upsertMany(transactions),
+    useTransactionsStore.getState().upsertMany(transactions, pendingIds),
     useAccountsStore.getState().upsertMany(accounts),
     useCategoriesStore.getState().upsertMany(categories),
   ])

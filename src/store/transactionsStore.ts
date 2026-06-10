@@ -26,7 +26,7 @@ interface TransactionsState {
   addTransaction: (input: TransactionInput) => Promise<Transaction>
   updateTransaction: (id: string, patch: Partial<TransactionInput>) => Promise<void>
   deleteTransaction: (id: string) => Promise<void>
-  upsertMany: (incoming: Transaction[]) => Promise<void>
+  upsertMany: (incoming: Transaction[], protectedIds?: Set<string>) => Promise<void>
   loadFromDb: () => Promise<void>
 }
 
@@ -104,7 +104,7 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     scheduleFlush()
   },
 
-  upsertMany: async (incoming) => {
+  upsertMany: async (incoming, protectedIds) => {
     const { rates, baseCurrency: rateBase } = useExchangeRateStore.getState()
     const { baseCurrency: prefBase } = usePrefsStore.getState()
     const base = prefBase || rateBase
@@ -122,12 +122,16 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const incomingIds = new Set(corrected.map(t => t.id))
     const existingMap = new Map(existing.map(t => [t.id, t]))
 
-    // Delete records that exist locally but are gone from Sheets
-    const toDelete = existing.filter(t => !incomingIds.has(t.id)).map(t => t.id)
+    // Delete records that exist locally but are gone from Sheets —
+    // except those still waiting in the sync queue (created/edited offline)
+    const toDelete = existing
+      .filter(t => !incomingIds.has(t.id) && !protectedIds?.has(t.id))
+      .map(t => t.id)
     if (toDelete.length > 0) await db.transactions.bulkDelete(toDelete)
 
     // Upsert records that are new, updated, or had amount_base corrected
     const toStore = corrected.filter(item => {
+      if (protectedIds?.has(item.id)) return false
       const local = existingMap.get(item.id)
       if (!local) return true
       if (item.amount_base !== local.amount_base) return true

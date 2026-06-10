@@ -24,6 +24,9 @@ interface AuthState {
 let _tokenClient: google.accounts.oauth2.TokenClient | null = null
 let _pendingResolve: (() => void) | null = null
 let _pendingReject: ((err: Error) => void) | null = null
+// Concurrent refreshToken() calls share one in-flight request instead of
+// overwriting each other's callbacks (which left the first promise hanging)
+let _refreshInFlight: Promise<void> | null = null
 
 export function setTokenClient(client: google.accounts.oauth2.TokenClient): void {
   _tokenClient = client
@@ -64,13 +67,16 @@ export const useAuthStore = create<AuthState>()(
 
       setSpreadsheet: (id, name) => set({ spreadsheetId: id, spreadsheetName: name }),
 
-      refreshToken: () =>
-        new Promise<void>((resolve, reject) => {
+      refreshToken: () => {
+        if (_refreshInFlight) return _refreshInFlight
+        _refreshInFlight = new Promise<void>((resolve, reject) => {
           if (!_tokenClient) { reject(new Error('Token client not initialized')); return }
           _pendingResolve = resolve
           _pendingReject = reject
           _tokenClient.requestAccessToken({ prompt: '' })
-        }),
+        }).finally(() => { _refreshInFlight = null })
+        return _refreshInFlight
+      },
 
       logout: () => {
         const token = get().accessToken

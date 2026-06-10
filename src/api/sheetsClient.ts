@@ -61,6 +61,52 @@ export async function sheetsRequest<T>(
   return res.json() as Promise<T>
 }
 
+// Numeric sheet IDs (gid) cached per sheet title
+const gidCache = new Map<string, number>()
+
+async function getSheetGid(sheet: string): Promise<number> {
+  if (gidCache.has(sheet)) return gidCache.get(sheet)!
+  const token = await getToken()
+  const spreadsheetId = useAuthStore.getState().spreadsheetId
+  const res = await fetch(`${BASE}/${spreadsheetId}?fields=sheets.properties`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`Sheets API ${res.status}: failed to read sheet metadata`)
+  const meta = await res.json() as { sheets?: { properties: { title: string; sheetId: number } }[] }
+  for (const s of meta.sheets ?? []) {
+    gidCache.set(s.properties.title, s.properties.sheetId)
+  }
+  const gid = gidCache.get(sheet)
+  if (gid == null) throw new Error(`Sheet "${sheet}" not found`)
+  return gid
+}
+
+/** Physically deletes the row holding entityId. No-op if the row is not found. */
+export async function deleteRowByEntityId(sheet: string, entityId: string): Promise<void> {
+  const rowNum = await findRowIndex(sheet, entityId)
+  if (!rowNum) return
+  const gid = await getSheetGid(sheet)
+  const token = await getToken()
+  const spreadsheetId = useAuthStore.getState().spreadsheetId
+  const res = await fetch(`${BASE}/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requests: [{
+        deleteDimension: {
+          range: { sheetId: gid, dimension: 'ROWS', startIndex: rowNum - 1, endIndex: rowNum },
+        },
+      }],
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Sheets API ${res.status}: ${JSON.stringify(err)}`)
+  }
+  // Row numbers below the deleted row have shifted — cached indices are stale
+  rowCache.clear()
+}
+
 export async function findRowIndex(sheet: string, entityId: string): Promise<number | null> {
   if (rowCache.has(entityId)) return rowCache.get(entityId)!
 
