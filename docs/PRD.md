@@ -62,7 +62,7 @@ Money PWA is a personal finance tracker that stores all data in the user's own G
 | UI primitives | Radix UI | various | same set as Tasks PWA |
 | Icons | lucide-react | ^0.575 | |
 | CSS utilities | clsx, tailwind-merge, class-variance-authority | | |
-| Exchange rates | frankfurter.app OR exchangerate-api.com | — | frankfurter.app is keyless (preferred for simplicity); exchangerate-api.com free tier if more currencies needed |
+| Exchange rates | fawazahmed0/currency-api | — | keyless, CDN-served via jsDelivr, includes RUB; updated daily |
 
 ---
 
@@ -121,7 +121,7 @@ On edit or delete, the previous effect is reversed before the new one is applied
 
 On app startup (after auth, before `initialLoad`):
 
-1. `fetchExchangeRates()` — GET `https://api.frankfurter.app/latest?from={BASE}` (no API key required). Supported currencies: EUR, USD, RUB, GBP, and others.
+1. `fetchExchangeRates()` — GET `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json` (no API key required). Supports EUR, USD, RUB, GBP, and many others.
 2. Rates stored in `exchangeRateStore` (in-memory only; also written to `settings` sheet as a JSON blob for reference).
 3. Every new transaction with a non-base currency gets `amount_base = amount * rate` computed at write time and stored permanently. Historical `amount_base` values are never recalculated retroactively.
 4. If the fetch fails, a warning banner is shown and the last known rate (from `settings` sheet) is used.
@@ -137,7 +137,7 @@ Money-PWA/
 ├── vite.config.ts
 ├── tsconfig.app.json
 ├── tailwind.config.js
-├── .env.example                VITE_GOOGLE_CLIENT_ID (no exchange rate key needed if using frankfurter.app)
+├── .env.example                VITE_GOOGLE_CLIENT_ID (no exchange rate key needed if using fawazahmed0/currency-api (jsDelivr CDN))
 ├── public/
 │   └── icons/
 ├── docs/
@@ -675,7 +675,7 @@ npm run build   # tsc -b && vite build → dist/
 Prerequisites: Node.js ≥ 18, npm ≥ 9, Google account, Google Cloud Console access.
 
 1. Clone and `npm install`.
-2. `cp .env.example .env` — fill in `VITE_GOOGLE_CLIENT_ID`. No exchange rate key needed (frankfurter.app is keyless).
+2. `cp .env.example .env` — fill in `VITE_GOOGLE_CLIENT_ID`. No exchange rate key needed (fawazahmed0/currency-api (jsDelivr CDN) is keyless).
 3. Google Cloud Console: enable **Sheets API** and **Drive API**. Create OAuth 2.0 Client ID (Web application). Add `http://localhost:5173` to authorized origins and redirect URIs.
 4. `npm run dev` → `http://localhost:5173`.
 5. First sign-in: `ensureSpreadsheet()` searches Drive for `db_money`. Not found → creates it and runs `seedOnboarding()`.

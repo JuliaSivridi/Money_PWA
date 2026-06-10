@@ -20,7 +20,7 @@ A personal finance tracker built as a **Progressive Web App**. Runs in any brows
 
 - **Offline-first** — every write goes to IndexedDB first; an 800 ms debounced queue flushes to Google Sheets when online. The app is fully usable without a connection
 - **Four transaction types** — Expense, Income, Transfer (between accounts), and Debt (lent / borrowed), each with category, account, date, and comment
-- **Multi-currency** — accounts have their own currency; exchange rates fetched automatically from frankfurter.app (no API key needed); each transaction stores both the original amount and the base-currency equivalent
+- **Multi-currency** — accounts have their own currency; exchange rates fetched automatically from [fawazahmed0/currency-api](https://github.com/fawazahmed0/exchange-api) via jsDelivr CDN (no API key needed, includes RUB); each transaction stores both the original amount and the base-currency equivalent
 - **Custom numeric keyboard** — no native keyboard for amount entry; a clean 1–9 pad appears inline and works reliably on all mobile browsers
 - **Date picker** — DD.MM.YYYY display with native calendar popup via `showPicker()` on desktop; calendar icon always visible
 - **Accounts** — card, cash, savings, investment; opening balance; archive support; live balances updated immediately on every transaction; archived accounts still shown for historical transfers
@@ -48,7 +48,7 @@ A personal finance tracker built as a **Progressive Web App**. Runs in any brows
 | 📋 Forms | react-hook-form + Zod |
 | 📊 Charts | Recharts |
 | 📅 Dates | date-fns |
-| 💱 Exchange rates | frankfurter.app (keyless) |
+| 💱 Exchange rates | fawazahmed0/currency-api via jsDelivr (keyless) |
 | 🚀 Hosting | GitHub Pages (via GitHub Actions) |
 
 ---

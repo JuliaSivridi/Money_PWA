@@ -20,7 +20,7 @@ Mirrors Tasks PWA exactly. See `PRD.md §2` for the full table.
 
 Key additions over Tasks PWA:
 - `recharts ^2` — bar chart + donut chart on Analytics screen.
-- `frankfurter.app` — keyless exchange rate API (no env var needed).
+- `fawazahmed0/currency-api (jsDelivr CDN)` — keyless exchange rate API (no env var needed).
 
 ---
 
@@ -196,7 +196,7 @@ Row number cache: `entityId → sheet row index` map, invalidated after every fl
 
 ```
 fetchExchangeRates(baseCurrency: string): Promise<Rates>
-  GET https://api.frankfurter.app/latest?from={baseCurrency}
+  GET https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json
   → { rates: { EUR: 1, RUB: 95.2, USD: 1.08, ... } }
 ```
 

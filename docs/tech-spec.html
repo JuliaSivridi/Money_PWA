@@ -406,7 +406,7 @@ Money-PWA/<br>
 │   │   ├── <span class="green">syncService.ts</span>             <span class="dim">flush / pull / initialLoad / fullSync / scheduleFlush</span><br>
 │   │   ├── <span class="green">offlineQueue.ts</span>            <span class="dim">enqueue / getPending / markDone / markFailed</span><br>
 │   │   ├── <span class="green">authService.ts</span>             <span class="dim">loadGISScript / initAuth / setTokenClient</span><br>
-│   │   └── <span class="green">exchangeRateService.ts</span>     <span class="dim">fetchExchangeRates from frankfurter.app</span><br>
+│   │   └── <span class="green">exchangeRateService.ts</span>     <span class="dim">fetchExchangeRates from fawazahmed0/currency-api (jsDelivr CDN)</span><br>
 │   │<br>
 │   ├── <span class="blue">store/</span>                         <span class="dim">One Zustand store per domain</span><br>
 │   │   ├── <span class="green">authStore.ts</span>               <span class="dim">user, accessToken, tokenExpiry, spreadsheetId (persisted)</span><br>
@@ -618,7 +618,7 @@ Money-PWA/<br>
   <h3>Sheet: <code>settings</code></h3>
   <p>Single cell <code>A1</code> contains a JSON blob:</p>
   <pre><code>{ "base_currency": "EUR", "exchange_rates": { "USD": 1.08, "RUB": 95.4, ... } }</code></pre>
-  <p>Used as fallback exchange rate cache when <code>api.frankfurter.app</code> is unreachable.</p>
+  <p>Used as fallback exchange rate cache when the fawazahmed0/currency-api (jsDelivr CDN) is unreachable.</p>
 
   <h2>localStorage (<code>money-auth</code>)</h2>
   <table>
@@ -662,7 +662,7 @@ https://www.googleapis.com/auth/drive.readonly</code></pre>
 
   <h2>AppShell first-launch setup</h2>
   <ol>
-    <li><code>fetchExchangeRates(baseCurrency)</code> — GET frankfurter.app.</li>
+    <li><code>fetchExchangeRates(baseCurrency)</code> — GET <code>https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json</code></li>
     <li><code>ensureSpreadsheet()</code> — search Drive for <code>name='db_money'</code>; create with 4 sheets if not found.</li>
     <li>If new spreadsheet → <code>seedOnboarding()</code>: 2 accounts, 3 categories, 1 expense.</li>
     <li><code>initialLoad()</code> — ensure headers, flush queue, pull all data.</li>
@@ -735,7 +735,7 @@ set({ TABLE: (await db.TABLE.toArray()).sort(...) })</code></pre>
       <tr><td>ensureSpreadsheet</td><td>GET Drive + POST Sheets</td><td>Drive files query + Sheets create</td><td>Creates if not found</td></tr>
       <tr><td>listUserSheets</td><td>GET Drive</td><td><code>files?q=mimeType=...&amp;orderBy=modifiedTime+desc</code></td><td></td></tr>
       <tr><td>loadSettings / saveSettings</td><td>GET / PUT</td><td><code>values/settings!A1</code></td><td>JSON blob in single cell</td></tr>
-      <tr><td>fetchExchangeRates</td><td>GET (external)</td><td><code>https://api.frankfurter.app/latest?from={base}</code></td><td>Not via sheetsClient</td></tr>
+      <tr><td>fetchExchangeRates</td><td>GET (external)</td><td><code>https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json</code></td><td>Not via sheetsClient</td></tr>
     </tbody>
   </table>
 
@@ -982,7 +982,7 @@ set({ TABLE: (await db.TABLE.toArray()).sort(...) })</code></pre>
     <li><code>base: '/Money_PWA/'</code></li>
     <li>PWA <code>registerType: 'autoUpdate'</code></li>
     <li>Manifest <code>theme_color: '#e07e38'</code>, <code>display: 'standalone'</code></li>
-    <li>Workbox: <code>sheets.googleapis.com</code> → NetworkFirst 10 s; <code>api.frankfurter.app</code> → NetworkFirst 10 s; <code>accounts.google.com/gsi</code> → NetworkOnly</li>
+    <li>Workbox: <code>sheets.googleapis.com</code> → NetworkFirst 10 s; <code>cdn.jsdelivr.net</code> (fawazahmed0/currency-api) → NetworkFirst 10 s; <code>accounts.google.com/gsi</code> → NetworkOnly</li>
   </ul>
 
   <!-- ─────────────────────────── S15 ─────────────────────────── -->

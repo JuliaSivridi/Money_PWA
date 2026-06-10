@@ -56,7 +56,7 @@
 
 ## Stage 6 — Exchange rates
 
-- [x] **6.1** `src/services/exchangeRateService.ts`: `fetchExchangeRates(baseCurrency)` using `frankfurter.app`. Cache result in `exchangeRateStore`. On failure read last known from settings.
+- [x] **6.1** `src/services/exchangeRateService.ts`: `fetchExchangeRates(baseCurrency)` using `fawazahmed0/currency-api (jsDelivr CDN)`. Cache result in `exchangeRateStore`. On failure read last known from settings.
 - [x] **6.2** `src/store/exchangeRateStore.ts`: `rates`, `baseCurrency`, `setRates()`, `getRate(currency)`.
 
 ---

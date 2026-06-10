@@ -176,7 +176,7 @@ Money-PWA/
 │   │   ├── syncService.ts            flush / pull / initialLoad / fullSync / scheduleFlush
 │   │   ├── offlineQueue.ts           enqueue / getPending / markDone / markFailed
 │   │   ├── authService.ts            loadGISScript / initAuth / setTokenClient
-│   │   └── exchangeRateService.ts    fetchExchangeRates from frankfurter.app
+│   │   └── exchangeRateService.ts    fetchExchangeRates from fawazahmed0/currency-api (jsDelivr CDN)
 │   │
 │   ├── store/                        One Zustand store per domain
 │   │   ├── authStore.ts              user, accessToken, tokenExpiry, spreadsheetId (persisted)
@@ -461,7 +461,7 @@ Single cell `A1` contains a JSON blob:
 { "base_currency": "EUR", "exchange_rates": { "USD": 1.08, "RUB": 95.4, ... } }
 ```
 
-Exchange rates are cached here as a fallback for when `api.frankfurter.app` is unreachable.
+Exchange rates are cached here as a fallback for when the fawazahmed0/currency-api (jsDelivr CDN) is unreachable.
 
 ---
 
@@ -515,7 +515,7 @@ https://www.googleapis.com/auth/drive.readonly
 ### AppShell first-launch setup
 
 10. `AppShell.useEffect` (runs once):
-    a. `fetchExchangeRates(baseCurrency)` — GET `https://api.frankfurter.app/latest?from=EUR` → stores in `exchangeRateStore` and caches to `settings!A1`.
+    a. `fetchExchangeRates(baseCurrency)` — GET `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json` → stores in `exchangeRateStore` and caches to `settings!A1`.
     b. `ensureSpreadsheet()` — searches Drive for `name='db_money' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`. If found, calls `setSpreadsheet(id, name)`. If not found, creates a new spreadsheet with 4 named sheets (`transactions`, `accounts`, `categories`, `settings`) and calls `setSpreadsheet`.
     c. If spreadsheet was newly created → `seedOnboarding()`: writes headers and starter data (2 accounts, 3 categories, 1 expense).
     d. `initialLoad()` — see §8.
@@ -625,7 +625,7 @@ Called when `window` fires `online` event. Guards against concurrent execution w
 | `ensureSpreadsheet` | GET Drive + POST Sheets | | Creates spreadsheet if not found |
 | `listUserSheets` | GET Drive | `files?q=mimeType=...&orderBy=modifiedTime+desc` | |
 | `loadSettings` / `saveSettings` | GET / PUT | `values/settings!A1` | JSON blob in single cell |
-| Exchange rates | GET | `https://api.frankfurter.app/latest?from={base}` | Not through sheetsClient |
+| Exchange rates | GET | `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json` | Not through sheetsClient |
 
 ---
 
@@ -910,7 +910,7 @@ Active item: `bg-accent text-accent-foreground`. Inactive: `text-muted-foregroun
 
 **Base currency card:**
 - Select: EUR / USD / RUB
-- Changing: `setBaseCurrency` → `save()` (writes to settings sheet) → `fetchExchangeRates(currency)` (updates frankfurter.app rates and re-caches)
+- Changing: `setBaseCurrency` → `save()` (writes to settings sheet) → `fetchExchangeRates(currency)` (updates fawazahmed0/currency-api (jsDelivr CDN) rates and re-caches)
 
 ---
 
@@ -1145,7 +1145,7 @@ There is no React Router. Navigation state lives entirely in `useUIStore.selecte
 - PWA: `registerType: 'autoUpdate'`, manifest `theme_color: '#e07e38'`
 - Workbox runtime caching:
   - `sheets.googleapis.com` → `NetworkFirst`, `networkTimeoutSeconds: 10`, cache `sheets-api`
-  - `api.frankfurter.app` → `NetworkFirst`, `networkTimeoutSeconds: 10`, cache `exchange-rates`
+  - `cdn.jsdelivr.net` (fawazahmed0/currency-api) → `NetworkFirst`, `networkTimeoutSeconds: 10`, cache `exchange-rates`
   - `accounts.google.com/gsi` → `NetworkOnly` (auth cannot be cached)
 
 ---
