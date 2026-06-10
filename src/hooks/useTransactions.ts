@@ -53,7 +53,9 @@ export function useFilteredTransactions(filterState: FilterState, searchQuery = 
   return useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     return transactions.filter(t => {
-      if (filterState.accountIds.length > 0 && !filterState.accountIds.includes(t.account_id)) return false
+      if (filterState.accountIds.length > 0 &&
+          !filterState.accountIds.includes(t.account_id) &&
+          !filterState.accountIds.includes(t.to_account_id ?? '')) return false
       if (filterState.types.length > 0 && !filterState.types.includes(t.type)) return false
       if (filterState.categoryIds.length > 0 && !t.category_ids.some(id => filterState.categoryIds.includes(id))) return false
       if (filterState.dateFrom && t.date < filterState.dateFrom) return false

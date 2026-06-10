@@ -28,7 +28,7 @@ interface Props {
 }
 
 export function AccountModal({ open, editing, onClose }: Props) {
-  const { addAccount, updateAccount, archiveAccount } = useAccountsStore()
+  const { addAccount, updateAccount } = useAccountsStore()
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
 
   const { register, handleSubmit, control, reset, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
@@ -50,8 +50,10 @@ export function AccountModal({ open, editing, onClose }: Props) {
 
   const onSubmit = async (values: FormValues) => {
     if (editing) {
-      await updateAccount(editing.id, { name: values.name, currency: values.currency, type: values.type, color: values.color })
-      if (values.archived && !editing.archived) await archiveAccount(editing.id)
+      await updateAccount(editing.id, {
+        name: values.name, currency: values.currency, type: values.type,
+        color: values.color, archived: values.archived,
+      })
     } else {
       await addAccount({
         name: values.name,
