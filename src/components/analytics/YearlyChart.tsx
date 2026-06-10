@@ -7,9 +7,10 @@ import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { usePrefsStore } from '@/store/prefsStore'
+import { useExchangeRateStore } from '@/store/exchangeRateStore'
 import { AnalyticsAccountPicker } from './AnalyticsAccountPicker'
 import { format, parseISO } from 'date-fns'
-import { formatAmount } from '@/utils/currencyUtils'
+import { formatAmount, convertToBase } from '@/utils/currencyUtils'
 
 interface Props {
   selectedMonth: string
@@ -82,6 +83,7 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
   const { transactions } = useTransactionsStore()
   const { accounts } = useAccountsStore()
   const { baseCurrency, analyticsAccountIds } = usePrefsStore()
+  const { rates } = useExchangeRateStore()
   const currentYear = new Date().getFullYear()
   const [year, setYear] = useState(currentYear)
   const [show, setShow] = useState<ShowState>({ income: true, expenses: true, balance: true })
@@ -89,20 +91,20 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
 
   const toggle = (key: keyof ShowState) => setShow(s => ({ ...s, [key]: !s[key] }))
 
-  // Only baseCurrency accounts are eligible — summing across currencies without FX rates is meaningless.
-  // analyticsAccountIds narrows which baseCurrency accounts to include; empty = all of them.
+  // All non-archived accounts, optionally filtered by user selection
   const balanceAccountIds = useMemo(() => {
-    const pool = accounts.filter(a => !a.archived && a.currency === baseCurrency)
+    const pool = accounts.filter(a => !a.archived)
     return analyticsAccountIds.length > 0
       ? pool.filter(a => analyticsAccountIds.includes(a.id)).map(a => a.id)
       : pool.map(a => a.id)
-  }, [accounts, analyticsAccountIds, baseCurrency])
+  }, [accounts, analyticsAccountIds])
 
+  // Convert each account balance to base currency before summing
   const currentBalance = useMemo(
     () => accounts
       .filter(a => balanceAccountIds.includes(a.id))
-      .reduce((s, a) => s + a.balance, 0),
-    [accounts, balanceAccountIds],
+      .reduce((s, a) => s + convertToBase(a.balance, a.currency, baseCurrency, rates), 0),
+    [accounts, balanceAccountIds, baseCurrency, rates],
   )
 
   // Monthly net filtered to the same accounts as currentBalance
@@ -257,8 +259,8 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
       </ResponsiveContainer>
 
       <p className="text-xs text-muted-foreground mt-1 text-center">
-        Tap a month to view details
-        {analyticsAccountIds.length > 0 && ` · Balance: ${analyticsAccountIds.length} account${analyticsAccountIds.length > 1 ? 's' : ''}`}
+        Tap a month to view details · Balance in {baseCurrency}
+        {analyticsAccountIds.length > 0 && ` · ${analyticsAccountIds.length} account${analyticsAccountIds.length > 1 ? 's' : ''}`}
       </p>
 
       <AnalyticsAccountPicker open={pickerOpen} onClose={() => setPickerOpen(false)} />

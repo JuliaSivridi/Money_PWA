@@ -1,6 +1,8 @@
 import { useAccountsStore } from '@/store/accountsStore'
 import { usePrefsStore } from '@/store/prefsStore'
+import { useExchangeRateStore } from '@/store/exchangeRateStore'
 import { DEFAULT_ENTITY_COLOR, ON_COLOR_TEXT, ICON_SIZES } from '@/utils/design'
+import { formatAmount, convertToBase } from '@/utils/currencyUtils'
 import { CreditCard, Wallet, PiggyBank, TrendingUp } from 'lucide-react'
 import type { AccountType } from '@/types/account'
 
@@ -13,9 +15,9 @@ interface Props { open: boolean; onClose: () => void }
 export function AnalyticsAccountPicker({ open, onClose }: Props) {
   const { accounts } = useAccountsStore()
   const { baseCurrency, analyticsAccountIds, setAnalyticsAccountIds } = usePrefsStore()
+  const { rates } = useExchangeRateStore()
 
-  // Only baseCurrency accounts make sense for balance trend (no FX conversion available)
-  const active = accounts.filter(a => !a.archived && a.currency === baseCurrency)
+  const active = accounts.filter(a => !a.archived)
   const allSelected = analyticsAccountIds.length === 0
 
   const toggle = (id: string) => {
@@ -51,7 +53,7 @@ export function AnalyticsAccountPicker({ open, onClose }: Props) {
             Balance trend: accounts
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {baseCurrency} accounts only · other currencies excluded
+            All currencies converted to {baseCurrency}
           </p>
         </div>
 
@@ -93,6 +95,11 @@ export function AnalyticsAccountPicker({ open, onClose }: Props) {
                   <p className="text-sm font-medium truncate">{a.name}</p>
                   <p className="text-xs text-muted-foreground">{a.type} · {a.currency}</p>
                 </div>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {a.currency === baseCurrency
+                    ? formatAmount(a.balance, baseCurrency)
+                    : formatAmount(convertToBase(a.balance, a.currency, baseCurrency, rates), baseCurrency)}
+                </span>
               </button>
             )
           })}
