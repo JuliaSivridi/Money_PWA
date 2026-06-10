@@ -20,14 +20,15 @@ A personal finance tracker built as a **Progressive Web App**. Runs in any brows
 
 - **Offline-first** — every write goes to IndexedDB first; an 800 ms debounced queue flushes to Google Sheets when online. The app is fully usable without a connection
 - **Four transaction types** — Expense, Income, Transfer (between accounts), and Debt (lent / borrowed), each with category, account, date, and comment
-- **Multi-currency** — accounts have their own currency; exchange rates fetched automatically; each transaction stores both the original amount and the base-currency equivalent
+- **Multi-currency** — accounts have their own currency; exchange rates fetched automatically from frankfurter.app (no API key needed); each transaction stores both the original amount and the base-currency equivalent
 - **Custom numeric keyboard** — no native keyboard for amount entry; a clean 1–9 pad appears inline and works reliably on all mobile browsers
-- **Accounts** — card, cash, savings, investment; opening balance; archive support; live balances updated immediately on every transaction
-- **Categories** — custom icon (from Lucide set) and color; frequency-sorted in the transaction form; monthly limits
-- **Smart defaults** — transaction form opens with today's date, the last-used account pre-selected, and the currency auto-filled from the account
-- **Analytics** — income vs. expense bar chart by month; category breakdown donut chart
-- **Plans** — monthly budget targets per category with progress bars
-- **Settings** — switch between any spreadsheet in your Google Drive; sign out
+- **Date picker** — DD.MM.YYYY display with native calendar popup via `showPicker()` on desktop; calendar icon always visible
+- **Accounts** — card, cash, savings, investment; opening balance; archive support; live balances updated immediately on every transaction; archived accounts still shown for historical transfers
+- **Categories** — custom icon (from Lucide set) and color; monthly budget limits with progress bars and ✓/✗ status
+- **Analytics — Yearly view** — income/expense bar chart with balance line; date range pickers + period chips (This year / 1Y / 2Y / 3Y); account filter for the balance calculation; tap a month to jump to monthly detail
+- **Analytics — Monthly view** — month navigation + date pickers + period chips (Month / 3M / 6M / Year); category donut with icon labels around the pie; per-category progress bars with today marker; income/expense toggle; average mode for multi-month periods
+- **Filters** — filter transactions by account, type, category, and date range
+- **Settings** — switch between any spreadsheet in your Google Drive; change base currency; sign out
 - **Light / dark theme** — follows OS preference automatically
 - **PWA** — installable on Android, iOS, and desktop; works as a standalone app with its own icon
 

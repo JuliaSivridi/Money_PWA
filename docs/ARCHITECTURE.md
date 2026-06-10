@@ -1,6 +1,6 @@
 # Money PWA — Architecture
 
-> Version 0.1.0 · 2026-06-08
+> Version 0.2.0 · 2026-06-10
 
 ---
 
@@ -54,7 +54,18 @@ Money-PWA/
     ├── api/            — Sheets API calls, Drive, spreadsheet setup
     ├── store/          — Zustand stores
     ├── hooks/          — custom React hooks
-    └── components/     — UI components
+    └── components/
+        ├── layout/           AppShell, Header, Drawer, LoginPage
+        ├── transactions/     TransactionList, TransactionItem, TransactionModal
+        ├── accounts/         AccountsPage, AccountModal, AccountsFilterPanel
+        ├── categories/       CategoriesPage, CategoryModal, CategoriesFilterPanel
+        ├── analytics/        AnalyticsPage, YearlyChart, MonthlyView, CategoryDonut,
+        │                     MonthBarChart, IncomeExpenseChart, BalanceChart, AnalyticsAccountPicker
+        ├── settings/         SettingsPage
+        ├── common/           DatePicker, FilterBar, FilterPanel, NumericKeyboard,
+        │                     CategoryIcon, FAB, IconPicker, ColorPicker,
+        │                     ConfirmDialog, Toast, SyncStatusBanner
+        └── ui/               Radix-backed primitives (Button, Select, Dialog, Sheet, …)
 ```
 
 ---
@@ -225,23 +236,39 @@ Before applying new delta, reverse the previous delta:
 
 ## 9. Analytics Calculations
 
-All analytics are computed in-memory from `transactionsStore`. No pre-aggregation.
+All analytics computed in-memory from `transactionsStore` + `accountsStore`. No pre-aggregation.
 
-**Monthly totals (bar chart):**
+### YearlyChart
+
 ```ts
-// group transactions by YYYY-MM, sum amount_base where type === 'expense'
-// last 12 months including current
+// rows: iterate YYYY-MM from dateFrom.slice(0,7) to dateTo.slice(0,7)
+// income[month]  = sum amount_base for type==='income'  in that month
+// expense[month] = sum amount_base for type==='expense' in that month
+
+// balance reconstruction (walk backwards from currentBalance):
+// balAt[nowMonth] = currentBalance
+// balAt[m-1] = balAt[m] - monthlyNet[m]
+
+// Only accounts in analyticsAccountIds (or all non-archived+convertible) feed monthlyNet and currentBalance
 ```
 
-**Category breakdown (donut + list):**
+**`AnalyticsAccountPicker`** lets the user choose which accounts are included in the balance line.
+
+### MonthlyView (CategoryDonut)
+
 ```ts
-// filter transactions: type === 'expense', date in selected month
-// group by category_id, sum amount_base
-// order by category.sort_order (not by amount)
-// for each: compare sum vs category.expense_limit
+// filter: type === txType ('expense' or 'income'), dateFrom <= date <= dateTo
+// group by category_ids[0], sum amount_base
+// order by category.sort_order
+// if isAverage (monthCount > 1): divide totals by monthCount for display
+// for each: compare (displayAmount) vs category.expense_limit
 ```
 
-**Base currency display:** all analytics amounts shown in base currency using stored `amount_base`.
+**Period chips** anchor to the *end* of `dateTo` (not `analyticsMonth`) so selecting a chip always gives a predictable range ending at the currently visible period.
+
+**`todayFraction`** = `today.getDate() / getDaysInMonth(today)` — passed to CategoryDonut only for the single-month view of the current calendar month. Used to render a vertical marker on limit progress bars.
+
+**Base currency display:** all amounts shown in `baseCurrency` using stored `amount_base`.
 
 ---
 

@@ -1,6 +1,6 @@
 # Money PWA — Product Requirements Document
 
-> Version 0.2.0 · Status: Draft · Updated: 2026-06-08
+> Version 0.3.0 · Status: Draft · Updated: 2026-06-10
 
 ---
 
@@ -204,20 +204,28 @@ Money-PWA/
         ├── categories/
         │   └── CategoriesPage.tsx   CRUD list with drag-to-reorder, icon/color picker, limits
         ├── analytics/
-        │   ├── AnalyticsPage.tsx    Full analytics screen
-        │   ├── MonthBarChart.tsx    12-month bar chart (recharts)
-        │   └── CategoryDonut.tsx    Donut chart + category breakdown list
+        │   ├── AnalyticsPage.tsx         Full analytics screen
+        │   ├── YearlyChart.tsx           ComposedChart: income/expense bars + balance line, date pickers, period chips
+        │   ├── MonthlyView.tsx           Monthly period selector with DatePicker, chips, CategoryDonut
+        │   ├── CategoryDonut.tsx         Pie chart with icon labels + category breakdown list
+        │   ├── MonthBarChart.tsx         Legacy 12-month expense bar chart (kept for backward compat)
+        │   ├── IncomeExpenseChart.tsx    Standalone income vs expense bar chart
+        │   ├── BalanceChart.tsx          Standalone balance line chart
+        │   └── AnalyticsAccountPicker.tsx  Account filter for YearlyChart balance calculation
         ├── settings/
         │   └── SettingsPage.tsx     Base currency picker, spreadsheet picker
         ├── common/
         │   ├── ConfirmDialog.tsx
         │   ├── SyncStatusBanner.tsx
         │   ├── Toast.tsx
-        │   ├── FilterBar.tsx        Reusable filter chips (account, type, category, date range)
+        │   ├── FAB.tsx              Floating action button
+        │   ├── CategoryIcon.tsx     Colored icon circle used in lists
+        │   ├── FilterBar.tsx        Inline chip row (account, type, category)
+        │   ├── FilterPanel.tsx      Full filter panel with DatePicker date range
+        │   ├── DatePicker.tsx       Shared DD.MM.YYYY display; showPicker() on desktop
+        │   ├── NumericKeyboard.tsx  Custom 1–9 numeric pad for amount entry
         │   ├── IconPicker.tsx       Grid of lucide icons for category selection
         │   └── ColorPicker.tsx      Palette of preset hex colors
-        └── login/
-            └── LoginPage.tsx
 ```
 
 ---
@@ -495,18 +503,45 @@ FAB (+): new category.
 
 ### Analytics
 
-Singlescreen, scrollable. No sub-navigation.
+Single scrollable screen split into two sub-views: **YearlyChart** (top) and **MonthlyView** (below).
 
-**Layout top to bottom:**
+---
 
-1. **Month bar chart** (`MonthBarChart`) — last 12 months, bar height = total expenses in base currency. Tap a bar → sets `analyticsMonth` (jumps to that month below).
-2. **Month selector** — `← May 2026 →` with current month total expenses.
-3. **Donut chart** (`CategoryDonut`) — segments in `sort_order` order, colored by category color. No sorting by size.
-4. **Category breakdown list** — for each category that appears in the selected month (ordered by `sort_order`):
-   - Icon circle | name | actual amount | limit (if set) | status indicator (✓ green / ✗ red if limit exceeded)
-   - Sub-row: thin progress bar (actual / limit), greyed out if no limit set.
+#### YearlyChart
 
-Only `expense` transactions count. `transfer` and `debt_*` are excluded. Amounts displayed in base currency.
+`recharts` `ComposedChart`. Income and expense bars (positive/negative) plus a running balance line for selected accounts.
+
+- **Year navigation** `← 2025 →` — sets full calendar year in the date fields; `year` state tracks current year for header label.
+- **Date fields** (always visible) — `DatePicker` for From / To; editing either field sets chip to `custom`.
+- **Period chips** — `This year` / `1Y` / `2Y` / `3Y`; each fills date fields relative to today. `RotateCcw` button appears when period differs from default ("This year").
+- **Series toggles** — Income / Expenses / Balance (each toggles visibility on the chart).
+- **Balance line** — reconstructed backwards from `currentBalance` using `monthlyNet` per month. Only accounts in `analyticsAccountIds` (or all non-archived convertible accounts if none selected) are included. `AnalyticsAccountPicker` (gear icon) lets the user filter which accounts feed the balance line.
+- **Bar click** → calls `onMonthClick(month)` which sets `analyticsMonth` and scrolls MonthlyView.
+
+---
+
+#### MonthlyView
+
+- **Month navigation** `← May 2026 →` — updates `analyticsMonth` in `uiStore`.
+- **Date fields** (always visible) — `DatePicker` for From / To. Editing either field activates `customMode` and de-highlights chips.
+- **Period chips** — `Month` / `3M` / `6M` / `Year`; chips always anchor to the end of `dateTo`, not to `analyticsMonth`, so the selected range is always predictable.
+  - `Month` = single calendar month ending at dateTo.
+  - `3M` / `6M` = rolling N months ending at dateTo.
+  - `Year` = rolling 12 months ending at dateTo.
+- **`RotateCcw`** appears next to date fields when the current period differs from the current calendar month.
+- **Expenses / Income toggle** — full-width tab bar with totals; income always shown in `text-green-500`.
+- **`CategoryDonut`** — passed `dateFrom`, `dateTo`, `isAverage`, `monthCount`, `todayFraction`, `periodLabel`.
+
+---
+
+#### CategoryDonut
+
+- `recharts` `PieChart` with `innerRadius=60`, `outerRadius=90`.
+- Segments in `sort_order` order; `paddingAngle=2`; `stroke="none"` (no white sector borders).
+- **Icon labels** rendered as pure SVG `<g>` elements (no `foreignObject`) — a colored `<circle>` with a `LucideIcon` nested SVG on top. Labels shown only for segments > 3%.
+- SVG viewport: `height=290`, `cy=145` → icon extent [145±133] = [12, 278] ⊂ [0, 290]; 12 px clearance top and bottom.
+- **Centre label** — total (or average if `isAverage`) in base currency + period abbreviation.
+- **Category list** below — icon | name | amount | limit status; thin progress bar if limit set; `todayFraction` marker on progress bar in single-current-month view.
 
 ---
 
@@ -545,9 +580,17 @@ A fixed grid of ~18 preset swatches — same visual approach as the screenshot f
 
 `recharts` `BarChart`. X-axis: abbreviated month names. Y-axis: hidden (space-saving). Bars colored `--primary`. Active/selected bar colored `--primary` at full opacity; others at 40%. Tap interaction sets `analyticsMonth`.
 
+### DatePicker
+
+Shared component used in FilterPanel, MonthlyView, YearlyChart, and TransactionModal.
+
+- Displays date as `DD.MM.YYYY`; hidden `<input type="date">` overlaps the full area at `opacity-0`.
+- `onClick` → `inputRef.current?.showPicker()` (desktop native calendar), falls back to `.focus()`.
+- Calendar SVG icon always visible on the right.
+
 ### CategoryDonut
 
-`recharts` `PieChart` with `innerRadius`. Segments in `sort_order` order, each segment colored by `category.color`. No legend inside chart — legend is the list below. Centre label: total for the month.
+`recharts` `PieChart` with `innerRadius`. Segments in `sort_order` order, each segment colored by `category.color`. `stroke="none"` removes inter-segment borders. No legend inside chart — icon labels float outside the pie. Centre label: total (or average) for the period. See Analytics §9 for full spec.
 
 ### SyncStatusBanner
 
