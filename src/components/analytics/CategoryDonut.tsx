@@ -8,37 +8,57 @@ import { CategoryIcon } from '@/components/common/CategoryIcon'
 import { BarChart2 } from 'lucide-react'
 
 interface Props {
-  month: string
+  type: 'expense' | 'income'
+  dateFrom: string
+  dateTo: string
+  isAverage?: boolean
+  monthCount?: number
+  /** 0–1 fraction of current month elapsed; when set, shows a "today" marker on progress bars */
+  todayFraction?: number
 }
 
-export function CategoryDonut({ month }: Props) {
+export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, monthCount = 1, todayFraction }: Props) {
   const { transactions } = useTransactionsStore()
   const { categories } = useCategoriesStore()
   const { baseCurrency } = usePrefsStore()
 
   const { data, total } = useMemo(() => {
-    const expenses = transactions.filter(t => t.type === 'expense' && t.date.startsWith(month))
+    const filtered = transactions.filter(t => {
+      if (t.type !== type) return false
+      if (dateFrom && t.date < dateFrom) return false
+      if (dateTo && t.date > dateTo) return false
+      return true
+    })
     const byCategory = new Map<string, number>()
-    for (const t of expenses) {
-      // Use primary category (first in array) for analytics totals — avoids double-counting
+    for (const t of filtered) {
       const primaryId = t.category_ids[0]
       if (primaryId) byCategory.set(primaryId, (byCategory.get(primaryId) ?? 0) + t.amount_base)
     }
     const total = Array.from(byCategory.values()).reduce((s, v) => s + v, 0)
     const data = categories
       .filter(c => byCategory.has(c.id))
-      .map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, amount: byCategory.get(c.id)!, limit: c.expense_limit }))
+      .sort((a, b) => (byCategory.get(b.id) ?? 0) - (byCategory.get(a.id) ?? 0))
+      .map(c => ({
+        id: c.id,
+        name: c.name,
+        icon: c.icon,
+        color: c.color,
+        amount: byCategory.get(c.id)!,
+        limit: type === 'expense' ? (c.expense_limit ?? 0) : 0,
+      }))
     return { data, total }
-  }, [transactions, categories, month])
+  }, [transactions, categories, type, dateFrom, dateTo])
 
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
         <BarChart2 size={40} className="opacity-20" />
-        <p>No data for this month</p>
+        <p>No data for this period</p>
       </div>
     )
   }
+
+  const displayTotal = isAverage ? total / monthCount : total
 
   return (
     <div>
@@ -51,21 +71,25 @@ export function CategoryDonut({ month }: Props) {
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center flex-col">
-          <span className="text-lg font-bold">{formatAmount(total, baseCurrency)}</span>
-          <span className="text-sm text-muted-foreground">expenses</span>
+          <span className="text-lg font-bold">{formatAmount(displayTotal, baseCurrency)}</span>
+          <span className="text-sm text-muted-foreground">
+            {type === 'expense' ? 'expenses' : 'income'}
+            {isAverage && '/mo'}
+          </span>
         </div>
       </div>
 
       <div className="mt-4 space-y-2 px-4">
         {data.map(item => {
-          const pct = item.limit > 0 ? Math.min(item.amount / item.limit, 1) : 0
-          const exceeded = item.limit > 0 && item.amount > item.limit
+          const displayAmount = isAverage ? item.amount / monthCount : item.amount
+          const pct = item.limit > 0 ? Math.min(displayAmount / item.limit, 1) : 0
+          const exceeded = item.limit > 0 && displayAmount > item.limit
           return (
             <div key={item.id} className="space-y-1">
               <div className="flex items-center gap-2">
                 <CategoryIcon icon={item.icon} color={item.color} size={14} />
                 <span className="flex-1 text-sm">{item.name}</span>
-                <span className="text-sm font-medium">{formatAmount(item.amount, baseCurrency)}</span>
+                <span className="text-sm font-medium">{formatAmount(displayAmount, baseCurrency)}</span>
                 {item.limit > 0 && (
                   <span className={`text-sm ${exceeded ? 'text-red-400' : 'text-green-400'}`}>
                     {exceeded ? '✗' : '✓'} {formatAmount(item.limit, baseCurrency)}
@@ -73,8 +97,17 @@ export function CategoryDonut({ month }: Props) {
                 )}
               </div>
               {item.limit > 0 && (
-                <div className="h-1 bg-muted rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${exceeded ? 'bg-red-400' : 'bg-green-400'}`} style={{ width: `${pct * 100}%` }} />
+                <div className="relative h-1 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${exceeded ? 'bg-red-400' : 'bg-green-400'}`}
+                    style={{ width: `${pct * 100}%` }}
+                  />
+                  {todayFraction !== undefined && (
+                    <div
+                      className="absolute top-0 bottom-0 w-px bg-foreground/40"
+                      style={{ left: `${todayFraction * 100}%` }}
+                    />
+                  )}
                 </div>
               )}
             </div>
