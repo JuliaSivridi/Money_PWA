@@ -66,7 +66,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
 
   const renderPieLabel = (props: { cx: number; cy: number; midAngle: number; outerRadius: number; percent: number; index: number }) => {
     if (props.percent <= 0.03) return null
-    const r = props.outerRadius + 26
+    const r = props.outerRadius + 30
     const x = props.cx + r * Math.cos(-props.midAngle * RADIAN)
     const y = props.cy + r * Math.sin(-props.midAngle * RADIAN)
     const item = data[props.index]
@@ -90,6 +90,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
               innerRadius={60}
               outerRadius={90}
               paddingAngle={2}
+              stroke="none"
               label={renderPieLabel}
               labelLine={false}
             >
@@ -134,8 +135,8 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
                   />
                   {todayFraction !== undefined && (
                     <div
-                      className="absolute -top-2 bottom-0 w-0.5 bg-foreground/60 rounded-full"
-                      style={{ left: `${todayFraction * 100}%` }}
+                      className="absolute w-0.5 bg-foreground/60 rounded-full"
+                      style={{ left: `${todayFraction * 100}%`, top: '-0.3rem', bottom: 0 }}
                     />
                   )}
                 </div>

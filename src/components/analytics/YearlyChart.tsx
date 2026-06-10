@@ -19,7 +19,7 @@ interface Props {
 }
 
 type ShowState = { income: boolean; expenses: boolean; balance: boolean }
-type YearPeriod = 'this-year' | '1y' | '3y' | 'custom'
+type YearPeriod = 'this-year' | '1y' | '2y' | '3y' | 'custom'
 
 function localISO(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -28,12 +28,14 @@ function localISO(d: Date): string {
 const YEAR_CHIPS: { id: YearPeriod; label: string }[] = [
   { id: 'this-year', label: 'This year' },
   { id: '1y',        label: '1Y' },
+  { id: '2y',        label: '2Y' },
   { id: '3y',        label: '3Y' },
 ]
 
 function chipRange(chip: YearPeriod, today: Date): { from: string; to: string } {
   if (chip === 'this-year') return { from: localISO(startOfYear(today)), to: localISO(today) }
   if (chip === '1y') return { from: localISO(subYears(today, 1)), to: localISO(today) }
+  if (chip === '2y') return { from: localISO(subYears(today, 2)), to: localISO(today) }
   return { from: localISO(subYears(today, 3)), to: localISO(today) }
 }
 

@@ -36,8 +36,12 @@ function getRange(mode: PeriodMode, analyticsMonth: string): { from: string; to:
       to: localISO(new Date(y, mo + 1, 0)),
     }
   }
-  // year
-  return { from: `${y}-01-01`, to: `${y}-12-31` }
+  // year: rolling 12 months ending at end of analyticsMonth
+  const start12 = subMonths(base, 11)
+  return {
+    from: localISO(new Date(start12.getFullYear(), start12.getMonth(), 1)),
+    to: localISO(new Date(y, mo + 1, 0)),
+  }
 }
 
 /** Format period duration for the donut center label, e.g. "avg /3M", "1Y", "5D" */
@@ -85,10 +89,13 @@ export function MonthlyView() {
   const handleDateFrom = (v: string) => { setDateFrom(v); setCustomMode(true) }
   const handleDateTo   = (v: string) => { setDateTo(v);   setCustomMode(true) }
   const selectChip = (m: PeriodMode) => {
-    // Anchor chips to the end of the currently visible date range so that
-    // clicking "3M" from a custom Jan–Feb view gives Oct–Dec, not Jun–Aug.
+    // Anchor to the end of the current date range so chips always work
+    // backwards from dateTo, regardless of analyticsMonth state timing.
     const anchor = dateTo.slice(0, 7) || analyticsMonth
-    if (anchor !== analyticsMonth) setAnalyticsMonth(anchor)
+    setAnalyticsMonth(anchor)
+    const r = getRange(m, anchor)
+    setDateFrom(r.from)
+    setDateTo(r.to)
     setMode(m)
     setCustomMode(false)
   }
@@ -130,6 +137,19 @@ export function MonthlyView() {
 
   const donutLabel = periodLabel(dateFrom, dateTo, isAverage)
 
+  // Show reset when the current dates differ from "today's month"
+  const defaultRange = getRange('month', currentMonthStr)
+  const isDefaultPeriod = dateFrom === defaultRange.from && dateTo === defaultRange.to
+
+  const resetToNow = () => {
+    setAnalyticsMonth(currentMonthISO())
+    const r = getRange('month', currentMonthStr)
+    setDateFrom(r.from)
+    setDateTo(r.to)
+    setMode('month')
+    setCustomMode(false)
+  }
+
   return (
     <div className="pb-6">
       {/* Month navigation */}
@@ -147,14 +167,23 @@ export function MonthlyView() {
         </button>
       </div>
 
-      {/* Always-visible date range */}
-      <div className="flex gap-2 px-4 pt-3 pb-2">
+      {/* Always-visible date range + reset */}
+      <div className="flex gap-2 px-4 pt-3 pb-2 items-center">
         <DatePicker value={dateFrom} onChange={handleDateFrom} />
         <DatePicker value={dateTo}   onChange={handleDateTo} />
+        {!isDefaultPeriod && (
+          <button
+            onClick={resetToNow}
+            className="p-1.5 text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+            title="Back to current month"
+          >
+            <RotateCcw size={15} />
+          </button>
+        )}
       </div>
 
-      {/* Period chips + reset */}
-      <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-none items-center">
+      {/* Period chips */}
+      <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
         {CHIPS.map(({ mode: m, label }) => (
           <button
             key={m}
@@ -168,15 +197,6 @@ export function MonthlyView() {
             {label}
           </button>
         ))}
-        {(customMode || analyticsMonth !== currentMonthStr) && (
-          <button
-            onClick={() => { setAnalyticsMonth(currentMonthISO()); setMode('month'); setCustomMode(false) }}
-            className="p-1 text-muted-foreground hover:text-primary transition-colors flex-shrink-0 ml-auto"
-            title="Back to current month"
-          >
-            <RotateCcw size={15} />
-          </button>
-        )}
       </div>
 
       {/* Full-width Expenses / Income toggle with totals — single line */}
