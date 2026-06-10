@@ -11,6 +11,7 @@ import { useExchangeRateStore } from '@/store/exchangeRateStore'
 import { AnalyticsAccountPicker } from './AnalyticsAccountPicker'
 import { format, parseISO, subYears, startOfYear } from 'date-fns'
 import { formatAmount, convertToBase } from '@/utils/currencyUtils'
+import { DatePicker } from '@/components/common/DatePicker'
 
 interface Props {
   selectedMonth: string
@@ -108,28 +109,40 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [periodChip, setPeriodChip] = useState<YearPeriod>('this-year')
 
+  const initRange = chipRange('this-year', today)
+  const [dateFrom, setDateFrom] = useState(initRange.from)
+  const [dateTo,   setDateTo]   = useState(initRange.to)
+
   const toggle = (key: keyof ShowState) => setShow(s => ({ ...s, [key]: !s[key] }))
 
   const selectChip = (chip: YearPeriod) => {
     setPeriodChip(chip)
-    if (chip !== 'custom') {
-      const r = chipRange(chip, today)
-      setYear(today.getFullYear())
-      // store from/to for filtering
-      setChipFrom(r.from)
-      setChipTo(r.to)
-    }
+    const r = chipRange(chip, today)
+    setYear(today.getFullYear())
+    setDateFrom(r.from)
+    setDateTo(r.to)
   }
 
-  const [chipFrom, setChipFrom] = useState(() => chipRange('this-year', today).from)
-  const [chipTo,   setChipTo]   = useState(() => chipRange('this-year', today).to)
+  const handleDateFrom = (v: string) => { setDateFrom(v); setPeriodChip('custom') }
+  const handleDateTo   = (v: string) => { setDateTo(v);   setPeriodChip('custom') }
+
+  const isDefault = periodChip === 'this-year'
 
   const resetToNow = () => {
     setPeriodChip('this-year')
     setYear(currentYear)
     const r = chipRange('this-year', today)
-    setChipFrom(r.from)
-    setChipTo(r.to)
+    setDateFrom(r.from)
+    setDateTo(r.to)
+  }
+
+  // Year nav sets the full calendar year as the date range
+  const goYear = (delta: number) => {
+    const y = year + delta
+    setYear(y)
+    setPeriodChip('custom')
+    setDateFrom(`${y}-01-01`)
+    setDateTo(y === currentYear ? localISO(today) : `${y}-12-31`)
   }
 
   // Only include accounts whose currency we can convert (base currency, or rate exists).
@@ -166,8 +179,8 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
   // Build rows for the selected range
   const rows = useMemo(() => {
     const nowMonth = format(new Date(), 'yyyy-MM')
-    const from = periodChip === 'custom' ? `${year}-01` : chipFrom.slice(0, 7)
-    const to   = periodChip === 'custom' ? `${year}-12` : chipTo.slice(0, 7)
+    const from = dateFrom.slice(0, 7)
+    const to   = dateTo.slice(0, 7)
     const multiYear = from.slice(0, 4) !== to.slice(0, 4)
     const result: { month: string; label: string; income: number; negExpense: number }[] = []
     let cur = from
@@ -186,7 +199,7 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
       cur = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
     }
     return result
-  }, [transactions, year, periodChip, chipFrom, chipTo])
+  }, [transactions, dateFrom, dateTo])
 
   // Reconstruct end-of-month balances by walking backwards from currentBalance
   const data = useMemo((): TooltipEntry[] => {
@@ -222,30 +235,18 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
     <div className="px-4 py-4">
       {/* Year navigation */}
       <div className="flex items-center justify-between mb-3">
-        <button
-          onClick={() => { setYear(y => y - 1); setPeriodChip('custom') }}
-          className="p-1 -ml-1 hover:text-primary transition-colors"
-        >
+        <button onClick={() => goYear(-1)} className="p-1 -ml-1 hover:text-primary transition-colors">
           <ChevronLeft size={20} />
         </button>
-        <span className={`font-semibold text-base ${periodChip !== 'custom' ? 'text-muted-foreground' : ''}`}>{year}</span>
-        <div className="flex items-center gap-0.5">
+        <span className="font-semibold text-base">{year}</span>
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => { setYear(y => y + 1); setPeriodChip('custom') }}
-            disabled={year >= currentYear && periodChip === 'custom'}
+            onClick={() => goYear(1)}
+            disabled={year >= currentYear}
             className="p-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight size={20} />
           </button>
-          {periodChip !== 'this-year' && (
-            <button
-              onClick={resetToNow}
-              className="p-1 text-muted-foreground hover:text-primary transition-colors"
-              title="Back to current period"
-            >
-              <RotateCcw size={15} />
-            </button>
-          )}
           <button
             onClick={() => setPickerOpen(true)}
             className={`p-1 -mr-1 transition-colors ${analyticsAccountIds.length > 0 ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
@@ -254,6 +255,21 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
             <Settings2 size={16} />
           </button>
         </div>
+      </div>
+
+      {/* Date range fields */}
+      <div className="flex gap-2 mb-2 items-center">
+        <DatePicker value={dateFrom} onChange={handleDateFrom} />
+        <DatePicker value={dateTo}   onChange={handleDateTo} />
+        {!isDefault && (
+          <button
+            onClick={resetToNow}
+            className="p-1.5 text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+            title="Reset to current period"
+          >
+            <RotateCcw size={15} />
+          </button>
+        )}
       </div>
 
       {/* Period chips */}

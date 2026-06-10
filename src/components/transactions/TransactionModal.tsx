@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -63,17 +63,24 @@ function AmountField({ value, active, onActivate, placeholder }: {
 // ─── DateInput ────────────────────────────────────────────────────────────────
 
 export function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const open = () => { try { inputRef.current?.showPicker() } catch { inputRef.current?.focus() } }
   return (
-    <div className="relative">
-      <div className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm text-foreground pointer-events-none min-h-[38px]">
+    <div className="relative cursor-pointer" onClick={open}>
+      <div className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm text-foreground pointer-events-none min-h-[38px] flex items-center select-none">
         {value ? isoToDisplay(value) : <span className="text-muted-foreground">DD.MM.YYYY</span>}
+        <svg className="ml-auto w-4 h-4 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+        </svg>
       </div>
       <input
+        ref={inputRef}
         type="date"
         value={value}
         onChange={e => { if (e.target.value) onChange(e.target.value) }}
         required
         className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+        tabIndex={-1}
       />
     </div>
   )

@@ -84,7 +84,14 @@ export function MonthlyView() {
   const [customMode, setCustomMode] = useState(false)
   const handleDateFrom = (v: string) => { setDateFrom(v); setCustomMode(true) }
   const handleDateTo   = (v: string) => { setDateTo(v);   setCustomMode(true) }
-  const selectChip = (m: PeriodMode) => { setMode(m); setCustomMode(false) }
+  const selectChip = (m: PeriodMode) => {
+    // Anchor chips to the end of the currently visible date range so that
+    // clicking "3M" from a custom Jan–Feb view gives Oct–Dec, not Jun–Aug.
+    const anchor = dateTo.slice(0, 7) || analyticsMonth
+    if (anchor !== analyticsMonth) setAnalyticsMonth(anchor)
+    setMode(m)
+    setCustomMode(false)
+  }
 
   // Count months in period
   const monthCount = useMemo(() => {
@@ -131,24 +138,13 @@ export function MonthlyView() {
           <ChevronLeft size={20} />
         </button>
         <p className="font-semibold">{formatMonthYear(analyticsMonth)}</p>
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={() => setAnalyticsMonth(nextMonth)}
-            disabled={nextMonth > currentMonthStr}
-            className="p-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <ChevronRight size={20} />
-          </button>
-          {analyticsMonth !== currentMonthStr && (
-            <button
-              onClick={() => { setAnalyticsMonth(currentMonthISO()); setMode('month'); setCustomMode(false) }}
-              className="p-1 text-muted-foreground hover:text-primary transition-colors"
-              title="Back to current month"
-            >
-              <RotateCcw size={15} />
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => setAnalyticsMonth(nextMonth)}
+          disabled={nextMonth > currentMonthStr}
+          className="p-1 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       {/* Always-visible date range */}
@@ -157,8 +153,8 @@ export function MonthlyView() {
         <DatePicker value={dateTo}   onChange={handleDateTo} />
       </div>
 
-      {/* Period chips */}
-      <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
+      {/* Period chips + reset */}
+      <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-none items-center">
         {CHIPS.map(({ mode: m, label }) => (
           <button
             key={m}
@@ -172,6 +168,15 @@ export function MonthlyView() {
             {label}
           </button>
         ))}
+        {(customMode || analyticsMonth !== currentMonthStr) && (
+          <button
+            onClick={() => { setAnalyticsMonth(currentMonthISO()); setMode('month'); setCustomMode(false) }}
+            className="p-1 text-muted-foreground hover:text-primary transition-colors flex-shrink-0 ml-auto"
+            title="Back to current month"
+          >
+            <RotateCcw size={15} />
+          </button>
+        )}
       </div>
 
       {/* Full-width Expenses / Income toggle with totals — single line */}

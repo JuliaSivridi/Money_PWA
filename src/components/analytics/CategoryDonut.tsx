@@ -65,7 +65,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
   const displayTotal = isAverage ? total / monthCount : total
 
   const renderPieLabel = (props: { cx: number; cy: number; midAngle: number; outerRadius: number; percent: number; index: number }) => {
-    if (props.percent <= 0.05) return null
+    if (props.percent <= 0.03) return null
     const r = props.outerRadius + 26
     const x = props.cx + r * Math.cos(-props.midAngle * RADIAN)
     const y = props.cy + r * Math.sin(-props.midAngle * RADIAN)
@@ -80,8 +80,8 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
 
   return (
     <div>
-      <div className="relative">
-        <ResponsiveContainer width="100%" height={220}>
+      <div className="relative pt-8">
+        <ResponsiveContainer width="100%" height={240}>
           <PieChart>
             <Pie
               data={data}
@@ -109,7 +109,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
         </div>
       </div>
 
-      <div className="mt-4 space-y-2 px-4">
+      <div className="mt-8 space-y-2 px-4">
         {data.map(item => {
           const displayAmount = isAverage ? item.amount / monthCount : item.amount
           const pct = item.limit > 0 ? Math.min(displayAmount / item.limit, 1) : 0
@@ -134,7 +134,7 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
                   />
                   {todayFraction !== undefined && (
                     <div
-                      className="absolute -top-1.5 -bottom-1.5 w-0.5 bg-foreground/60 rounded-full"
+                      className="absolute -top-2 bottom-0 w-0.5 bg-foreground/60 rounded-full"
                       style={{ left: `${todayFraction * 100}%` }}
                     />
                   )}
