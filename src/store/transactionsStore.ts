@@ -105,18 +105,33 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   },
 
   upsertMany: async (incoming) => {
+    const { rates, baseCurrency: rateBase } = useExchangeRateStore.getState()
+    const { baseCurrency: prefBase } = usePrefsStore.getState()
+    const base = prefBase || rateBase
+
+    // Fix amount_base when Sheets stored the raw amount instead of base-currency equivalent.
+    // Condition: non-base currency AND (amount_base is zero OR equals amount — both indicate no conversion).
+    const corrected = incoming.map(t => {
+      if (t.currency !== base && rates[t.currency] && (t.amount_base === 0 || t.amount_base === t.amount)) {
+        return { ...t, amount_base: convertToBase(t.amount, t.currency, base, rates) }
+      }
+      return t
+    })
+
     const existing = await db.transactions.toArray()
-    const incomingIds = new Set(incoming.map(t => t.id))
+    const incomingIds = new Set(corrected.map(t => t.id))
     const existingMap = new Map(existing.map(t => [t.id, t]))
 
     // Delete records that exist locally but are gone from Sheets
     const toDelete = existing.filter(t => !incomingIds.has(t.id)).map(t => t.id)
     if (toDelete.length > 0) await db.transactions.bulkDelete(toDelete)
 
-    // Upsert records that are new or updated
-    const toStore = incoming.filter(item => {
+    // Upsert records that are new, updated, or had amount_base corrected
+    const toStore = corrected.filter(item => {
       const local = existingMap.get(item.id)
-      return !local || item.updated_at > local.updated_at
+      if (!local) return true
+      if (item.amount_base !== local.amount_base) return true
+      return item.updated_at > local.updated_at
     })
     if (toStore.length > 0) await db.transactions.bulkPut(toStore)
 

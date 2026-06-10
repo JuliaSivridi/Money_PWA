@@ -86,9 +86,9 @@ export function CategoryDonut({ type, dateFrom, dateTo, isAverage = false, month
 
   return (
     <div>
-      <div className="relative">
+      <div className="relative" style={{ overflow: 'visible' }}>
         <ResponsiveContainer width="100%" height={240}>
-          <PieChart>
+          <PieChart style={{ overflow: 'visible' }}>
             <Pie
               data={data}
               dataKey="amount"
