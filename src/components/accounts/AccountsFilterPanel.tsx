@@ -32,7 +32,7 @@ export function AccountsFilterPanel({ open, onClose }: Props) {
     const current = accountsFilter[key]
     setAccountsFilter({
       ...accountsFilter,
-      [key]: current.includes(value) ? current.filter(v => v !== value) : [...current, value],
+      [key]: current.includes(value) ? current.filter((v: string) => v !== value) : [...current, value],
     })
   }
 
