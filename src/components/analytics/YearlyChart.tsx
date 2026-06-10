@@ -91,15 +91,18 @@ export function YearlyChart({ selectedMonth, onMonthClick }: Props) {
 
   const toggle = (key: keyof ShowState) => setShow(s => ({ ...s, [key]: !s[key] }))
 
-  // All non-archived accounts, optionally filtered by user selection
+  // Only include accounts whose currency we can convert (base currency, or rate exists).
+  // Without this guard, a ₽6,000,000 account with no rate would be treated as €6,000,000.
   const balanceAccountIds = useMemo(() => {
-    const pool = accounts.filter(a => !a.archived)
-    return analyticsAccountIds.length > 0
-      ? pool.filter(a => analyticsAccountIds.includes(a.id)).map(a => a.id)
-      : pool.map(a => a.id)
-  }, [accounts, analyticsAccountIds])
+    const pool = accounts.filter(a =>
+      !a.archived && (a.currency === baseCurrency || Boolean(rates[a.currency]))
+    )
+    const eligible = analyticsAccountIds.length > 0
+      ? pool.filter(a => analyticsAccountIds.includes(a.id))
+      : pool
+    return eligible.map(a => a.id)
+  }, [accounts, analyticsAccountIds, baseCurrency, rates])
 
-  // Convert each account balance to base currency before summing
   const currentBalance = useMemo(
     () => accounts
       .filter(a => balanceAccountIds.includes(a.id))
