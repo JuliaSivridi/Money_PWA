@@ -86,6 +86,16 @@ export async function pull(): Promise<void> {
 
 export async function initialLoad(): Promise<void> {
   const sync = useSyncStore.getState()
+
+  // Cache-first: show IndexedDB data instantly, then refresh from Sheets in
+  // the background. Without this the user stares at "No transactions yet"
+  // for the ~10 s the initial pull takes.
+  await Promise.all([
+    useTransactionsStore.getState().loadFromDb(),
+    useAccountsStore.getState().loadFromDb(),
+    useCategoriesStore.getState().loadFromDb(),
+  ])
+
   sync.setSyncing(true)
   sync.setSyncError(null)
   try {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Wallet } from 'lucide-react'
+import { Wallet, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FAB } from '@/components/common/FAB'
 import { FilterPanel } from '@/components/common/FilterPanel'
@@ -8,6 +8,7 @@ import { TransactionModal } from './TransactionModal'
 import { FilterBar } from '@/components/common/FilterBar'
 import { useTransactionsByDate, useFilteredTransactions } from '@/hooks/useTransactions'
 import { useUIStore } from '@/store/uiStore'
+import { useSyncStore } from '@/store/syncStore'
 import type { Transaction } from '@/types/transaction'
 
 /** How many date-groups to render per page */
@@ -18,6 +19,7 @@ export function TransactionList() {
   const allGroups = useTransactionsByDate()
   const filtered = useFilteredTransactions(filterState, searchQuery)
 
+  const { isSyncing } = useSyncStore()
   const [createOpen, setCreateOpen] = useState(false)
   const [editTx, setEditTx] = useState<Transaction | null>(null)
   const [copyTx, setCopyTx] = useState<Transaction | null>(null)
@@ -75,11 +77,20 @@ export function TransactionList() {
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         {displayGroups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center flex-1 h-full gap-3 text-muted-foreground">
-            <Wallet size={40} className="opacity-20" />
-            <p>No transactions yet</p>
-            <Button variant="ghost" size="sm" onClick={() => setCreateOpen(true)}>+ Add transaction</Button>
-          </div>
+          // First-ever sync has nothing cached yet — show progress, not a
+          // scary "No transactions yet"
+          isSyncing ? (
+            <div className="flex flex-col items-center justify-center flex-1 h-full gap-3 text-muted-foreground">
+              <RefreshCw size={32} className="opacity-40 animate-spin" />
+              <p>Loading your transactions…</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 h-full gap-3 text-muted-foreground">
+              <Wallet size={40} className="opacity-20" />
+              <p>No transactions yet</p>
+              <Button variant="ghost" size="sm" onClick={() => setCreateOpen(true)}>+ Add transaction</Button>
+            </div>
+          )
         ) : (
           <>
             {displayGroups.map(group => (
