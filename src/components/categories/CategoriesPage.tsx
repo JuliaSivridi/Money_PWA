@@ -18,14 +18,16 @@ import type { Category } from '@/types/category'
 
 type ActiveTab = 'expenses' | 'income'
 
-function SortableCategory({ category, onClick, currency }: {
+function SortableCategory({ category, onClick, currency, tab }: {
   category: Category
   onClick: () => void
   currency: string
+  tab: ActiveTab
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
-  const limit = category.expense_limit ?? 0
+  // Each tab shows its own limit: expense_limit on Expenses, income_limit on Income
+  const limit = (tab === 'expenses' ? category.expense_limit : category.income_limit) ?? 0
 
   return (
     <button
@@ -89,7 +91,7 @@ export function CategoriesPage() {
             const isActive = activeTab === tab
             const limit = tab === 'expenses'
               ? categories.filter(c => c.is_expense).reduce((s, c) => s + (c.expense_limit ?? 0), 0)
-              : categories.filter(c => c.is_income).reduce((s, c) => s + (c.expense_limit ?? 0), 0)
+              : categories.filter(c => c.is_income).reduce((s, c) => s + (c.income_limit ?? 0), 0)
             return (
               <button
                 key={tab}
@@ -126,6 +128,7 @@ export function CategoriesPage() {
                   category={cat}
                   onClick={() => setEditCategory(cat)}
                   currency={baseCurrency}
+                  tab={activeTab}
                 />
               ))}
             </SortableContext>
