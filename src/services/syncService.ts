@@ -84,18 +84,19 @@ export async function pull(): Promise<void> {
   useSyncStore.getState().setLastSyncAt(now())
 }
 
-export async function initialLoad(): Promise<void> {
-  const sync = useSyncStore.getState()
-
-  // Cache-first: show IndexedDB data instantly, then refresh from Sheets in
-  // the background. Without this the user stares at "No transactions yet"
-  // for the ~10 s the initial pull takes.
+/** Cache-first: show IndexedDB data instantly. Must be the very first thing
+ *  the app does on startup — before exchange rates, Drive lookup and the
+ *  Sheets pull — so the user never stares at "No transactions yet". */
+export async function loadFromCache(): Promise<void> {
   await Promise.all([
     useTransactionsStore.getState().loadFromDb(),
     useAccountsStore.getState().loadFromDb(),
     useCategoriesStore.getState().loadFromDb(),
   ])
+}
 
+export async function initialLoad(): Promise<void> {
+  const sync = useSyncStore.getState()
   sync.setSyncing(true)
   sync.setSyncError(null)
   try {
