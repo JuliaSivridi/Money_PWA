@@ -21,6 +21,8 @@ export interface PeriodState {
 interface UIState {
   selectedView: SelectedView
   settingsOpen: boolean
+  helpOpen: boolean
+  feedbackOpen: boolean
   sidebarOpen: boolean
   filterState: FilterState
   filterPanelOpen: boolean
@@ -33,6 +35,8 @@ interface UIState {
   analyticsMonth: string
   setView: (view: SelectedView) => void
   setSettingsOpen: (v: boolean) => void
+  setHelpOpen: (v: boolean) => void
+  setFeedbackOpen: (v: boolean) => void
   setSidebarOpen: (v: boolean) => void
   setFilter: (patch: Partial<FilterState>) => void
   clearFilters: () => void
@@ -59,6 +63,8 @@ const emptyFilter: FilterState = {
 export const useUIStore = create<UIState>((set) => ({
   selectedView: 'transactions',
   settingsOpen: false,
+  helpOpen: false,
+  feedbackOpen: false,
   sidebarOpen: false,
   filterState: emptyFilter,
   filterPanelOpen: false,
@@ -71,6 +77,8 @@ export const useUIStore = create<UIState>((set) => ({
   analyticsMonth: currentMonthISO(),
   setView: (view) => set({ selectedView: view, sidebarOpen: false }),
   setSettingsOpen: (v) => set({ settingsOpen: v }),
+  setHelpOpen: (v) => set({ helpOpen: v }),
+  setFeedbackOpen: (v) => set({ feedbackOpen: v }),
   setSidebarOpen: (v) => set({ sidebarOpen: v }),
   setFilter: (patch) => set((s) => ({ filterState: { ...s.filterState, ...patch } })),
   clearFilters: () => set({ filterState: emptyFilter }),

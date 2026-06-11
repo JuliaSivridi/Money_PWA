@@ -7,6 +7,8 @@ import { AccountsPage } from '@/components/accounts/AccountsPage'
 import { CategoriesPage } from '@/components/categories/CategoriesPage'
 import { AnalyticsPage } from '@/components/analytics/AnalyticsPage'
 import { SettingsPage } from '@/components/settings/SettingsPage'
+import { HelpPage } from '@/components/help/HelpPage'
+import { FeedbackPage } from '@/components/feedback/FeedbackPage'
 import { useUIStore } from '@/store/uiStore'
 import { useSync } from '@/hooks/useSync'
 import { initialLoad } from '@/services/syncService'
@@ -16,7 +18,7 @@ import { usePrefsStore } from '@/store/prefsStore'
 import { fetchExchangeRates } from '@/services/exchangeRateService'
 
 export function AppShell() {
-  const { selectedView, settingsOpen, sidebarOpen, setSidebarOpen } = useUIStore()
+  const { selectedView, settingsOpen, helpOpen, feedbackOpen, sidebarOpen, setSidebarOpen } = useUIStore()
   useSync()
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function AppShell() {
     <div className="flex flex-col h-dvh bg-background">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        {!settingsOpen && (
+        {!settingsOpen && !helpOpen && !feedbackOpen && (
           <>
             <aside className="hidden md:flex flex-col w-60 border-r flex-shrink-0 overflow-hidden">
               <Drawer />
@@ -49,7 +51,9 @@ export function AppShell() {
         )}
 
         <main className="flex-1 overflow-hidden">
-          {settingsOpen ? <SettingsPage />
+          {helpOpen ? <HelpPage />
+            : feedbackOpen ? <FeedbackPage />
+            : settingsOpen ? <SettingsPage />
             : selectedView === 'transactions' ? <TransactionList />
             : selectedView === 'accounts' ? <AccountsPage />
             : selectedView === 'categories' ? <CategoriesPage />

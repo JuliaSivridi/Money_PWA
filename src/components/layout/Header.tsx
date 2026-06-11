@@ -1,4 +1,4 @@
-import { Menu, LogOut, Settings, ChevronLeft, Cloud, CloudOff, CloudAlert, RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
+import { Menu, LogOut, Settings, ChevronLeft, Cloud, CloudOff, CloudAlert, RefreshCw, Search, SlidersHorizontal, HelpCircle, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -17,6 +17,7 @@ export function Header() {
   const { user, logout } = useAuthStore()
   const {
     selectedView, settingsOpen, setSettingsOpen, sidebarOpen, setSidebarOpen,
+    helpOpen, setHelpOpen, feedbackOpen, setFeedbackOpen,
     searchQuery, setSearchQuery,
     filterPanelOpen, setFilterPanelOpen,
     filterState,
@@ -27,7 +28,13 @@ export function Header() {
   } = useUIStore()
   const { isOnline, isSyncing, pendingCount, syncError } = useSyncStore()
 
-  const showSearch = !settingsOpen && SEARCHABLE.includes(selectedView)
+  const overlayOpen = settingsOpen || helpOpen || feedbackOpen
+  const overlayBack = settingsOpen ? () => setSettingsOpen(false)
+    : helpOpen ? () => setHelpOpen(false)
+    : () => setFeedbackOpen(false)
+  const overlayTitle = settingsOpen ? 'Settings' : helpOpen ? 'Short guide' : 'Feedback'
+
+  const showSearch = !overlayOpen && SEARCHABLE.includes(selectedView)
 
   const handleSignOut = async () => {
     try { await flush() } catch { /* best effort */ }
@@ -50,8 +57,8 @@ export function Header() {
     <header className="flex items-center gap-2 px-3 h-14 border-b bg-background flex-shrink-0">
 
       {/* Left: logo mark + hamburger / back */}
-      {settingsOpen ? (
-        <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(false)} aria-label="Back">
+      {overlayOpen ? (
+        <Button variant="ghost" size="sm" onClick={overlayBack} aria-label="Back">
           <ChevronLeft size={18} />
         </Button>
       ) : (
@@ -65,8 +72,8 @@ export function Header() {
       )}
 
       {/* Center: search or title */}
-      {settingsOpen ? (
-        <span className="font-semibold text-base flex-1">Settings</span>
+      {overlayOpen ? (
+        <span className="font-semibold text-base flex-1">{overlayTitle}</span>
       ) : showSearch ? (
         <div className="flex-1 relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -156,6 +163,12 @@ export function Header() {
               </div>
               <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                 <Settings size={14} className="mr-2" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHelpOpen(true)}>
+                <HelpCircle size={14} className="mr-2" /> Help
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFeedbackOpen(true)}>
+                <MessageSquare size={14} className="mr-2" /> Feedback
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => void handleSignOut()} className="text-destructive">
