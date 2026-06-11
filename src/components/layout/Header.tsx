@@ -161,13 +161,14 @@ export function Header() {
                 <p className="text-sm font-medium truncate">{user.name}</p>
                 <p className="text-sm text-muted-foreground truncate">{user.email}</p>
               </div>
-              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+              {/* Each item closes the other overlays so switching works from any screen */}
+              <DropdownMenuItem onClick={() => { setHelpOpen(false); setFeedbackOpen(false); setSettingsOpen(true) }}>
                 <Settings size={14} className="mr-2" /> Settings
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setHelpOpen(true)}>
+              <DropdownMenuItem onClick={() => { setSettingsOpen(false); setFeedbackOpen(false); setHelpOpen(true) }}>
                 <HelpCircle size={14} className="mr-2" /> Help
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFeedbackOpen(true)}>
+              <DropdownMenuItem onClick={() => { setSettingsOpen(false); setHelpOpen(false); setFeedbackOpen(true) }}>
                 <MessageSquare size={14} className="mr-2" /> Feedback
               </DropdownMenuItem>
               <DropdownMenuSeparator />
