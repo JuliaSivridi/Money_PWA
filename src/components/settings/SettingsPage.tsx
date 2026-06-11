@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuthStore } from '@/store/authStore'
 import { usePrefsStore } from '@/store/prefsStore'
-import { listUserSheets } from '@/api/driveApi'
+import { openSpreadsheetPicker } from '@/services/picker'
 import { initialLoad } from '@/services/syncService'
 import { fetchExchangeRates } from '@/services/exchangeRateService'
 import { db } from '@/services/db'
@@ -14,37 +14,27 @@ const CURRENCIES = ['EUR', 'USD', 'RUB']
 export function SettingsPage() {
   const { spreadsheetId, spreadsheetName, setSpreadsheet } = useAuthStore()
   const { baseCurrency, setBaseCurrency, save } = usePrefsStore()
-  const [sheets, setSheets] = useState<{ id: string; name: string }[]>([])
-  const [loadingSheets, setLoadingSheets] = useState(false)
   const [changingSheet, setChangingSheet] = useState(false)
   const [savingCurrency, setSavingCurrency] = useState(false)
 
-  const loadSheets = async () => {
-    setLoadingSheets(true)
-    try {
-      const result = await listUserSheets()
-      setSheets(result)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoadingSheets(false)
-    }
-  }
-
-  const handleChangeSheet = async (id: string, name: string) => {
-    if (id === spreadsheetId) { setSheets([]); return }
+  // Native Google Picker: picking a file also grants the app access to it
+  // (we only have the drive.file scope — the rest of Drive is invisible).
+  const handleOpenPicker = async () => {
     setChangingSheet(true)
     try {
+      const file = await openSpreadsheetPicker()
+      if (!file || file.id === spreadsheetId) return
       await Promise.all([
         db.transactions.clear(), db.accounts.clear(),
         db.categories.clear(), db.queue.clear(),
       ])
       invalidateRowCache()
-      setSpreadsheet(id, name)
+      setSpreadsheet(file.id, file.name)
       await initialLoad()
+    } catch (err) {
+      console.error(err)
     } finally {
       setChangingSheet(false)
-      setSheets([])
     }
   }
 
@@ -59,8 +49,6 @@ export function SettingsPage() {
     }
   }
 
-  const showingList = sheets.length > 0
-
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {/* Spreadsheet card */}
@@ -70,32 +58,10 @@ export function SettingsPage() {
             <h3 className="font-semibold">Spreadsheet</h3>
             <p className="text-sm text-foreground truncate">{spreadsheetName || 'db_money'}</p>
           </div>
-          {!showingList ? (
-            <Button size="sm" variant="outline" onClick={() => void loadSheets()} disabled={loadingSheets} className="shrink-0">
-              {loadingSheets ? 'Loading…' : 'Change'}
-            </Button>
-          ) : (
-            <Button size="sm" variant="ghost" onClick={() => setSheets([])} className="shrink-0">
-              Cancel
-            </Button>
-          )}
+          <Button size="sm" variant="outline" onClick={() => void handleOpenPicker()} disabled={changingSheet} className="shrink-0">
+            {changingSheet ? 'Loading…' : 'Change'}
+          </Button>
         </div>
-
-        {showingList && (
-          <div className="max-h-52 overflow-y-auto rounded-md border divide-y">
-            {sheets.map(s => (
-              <button
-                key={s.id}
-                onClick={() => void handleChangeSheet(s.id, s.name)}
-                disabled={changingSheet}
-                className={`w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition-colors flex items-center justify-between gap-2 ${s.id === spreadsheetId ? 'bg-accent/50' : ''}`}
-              >
-                <span className="truncate">{s.name}</span>
-                {s.id === spreadsheetId && <span className="text-primary text-sm shrink-0">current</span>}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Base currency card */}

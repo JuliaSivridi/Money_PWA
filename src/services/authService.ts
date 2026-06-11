@@ -1,10 +1,11 @@
 import { useAuthStore, setTokenClient, resolveTokenRequest, rejectTokenRequest } from '@/store/authStore'
 
+// drive.file: access only to files this app created or the user picked via
+// the Google Picker — the app can no longer see the rest of Drive/Sheets.
 const SCOPES = [
   'email',
   'profile',
-  'https://www.googleapis.com/auth/spreadsheets',
-  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/drive.file',
 ].join(' ')
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string

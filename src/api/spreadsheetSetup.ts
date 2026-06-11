@@ -1,30 +1,39 @@
+// Spreadsheet setup under the drive.file scope: the app can only see files
+// it created itself or that the user picked via the Google Picker. There is
+// deliberately NO silent find-by-name and NO silent create — on first run
+// the user explicitly chooses "create new" or "pick existing" (AppShell).
+
 import { useAuthStore } from '@/store/authStore'
 import { SPREADSHEET_TITLE } from '@/utils/constants'
 
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 const DRIVE_BASE = 'https://www.googleapis.com/drive/v3'
 
-export async function ensureSpreadsheet(): Promise<{ isNew: boolean }> {
+/**
+ * 'ready' — the stored spreadsheet id is accessible.
+ * 'setup' — no spreadsheet yet, or access was lost (scope migration) →
+ *           AppShell shows the setup screen.
+ */
+export async function checkSpreadsheet(): Promise<'ready' | 'setup'> {
   const { spreadsheetId, setSpreadsheet, accessToken } = useAuthStore.getState()
-  if (spreadsheetId) return { isNew: false }
-  if (!accessToken) throw new Error('Cannot find/create spreadsheet: not authenticated')
+  if (!spreadsheetId) return 'setup'
+  if (!accessToken) throw new Error('Not authenticated')
 
-  const query = encodeURIComponent(
-    `name='${SPREADSHEET_TITLE}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
-  )
-  const listRes = await fetch(`${DRIVE_BASE}/files?q=${query}&fields=files(id,name)`, {
+  const res = await fetch(`${DRIVE_BASE}/files/${spreadsheetId}?fields=id,name`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  if (!listRes.ok) {
-    const err = await listRes.json().catch(() => ({})) as Record<string, unknown>
-    throw new Error(`Failed to search Drive: ${JSON.stringify(err)}`)
+  if (res.ok) {
+    const f = await res.json() as { id: string; name: string }
+    setSpreadsheet(f.id, f.name)   // keep the display name fresh
+    return 'ready'
   }
+  return 'setup'
+}
 
-  const list = await listRes.json() as { files: { id: string; name: string }[] }
-  if (list.files.length > 0) {
-    setSpreadsheet(list.files[0].id, list.files[0].name)
-    return { isNew: false }
-  }
+/** Creates a fresh db_money spreadsheet (drive.file grants access to files the app creates). */
+export async function createSpreadsheet(): Promise<void> {
+  const { setSpreadsheet, accessToken } = useAuthStore.getState()
+  if (!accessToken) throw new Error('Cannot create spreadsheet: not authenticated')
 
   const res = await fetch(SHEETS_BASE, {
     method: 'POST',
@@ -46,5 +55,4 @@ export async function ensureSpreadsheet(): Promise<{ isNew: boolean }> {
 
   const data = await res.json() as { spreadsheetId: string }
   setSpreadsheet(data.spreadsheetId, SPREADSHEET_TITLE)
-  return { isNew: true }
 }
