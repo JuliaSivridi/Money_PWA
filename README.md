@@ -1,4 +1,4 @@
-# Money
+﻿# Money
 
 [![Live PWA](https://img.shields.io/badge/Money_PWA-Live_PWA-E07E38?style=for-the-badge)](https://juliasivridi.github.io/Money_PWA/)
 
@@ -10,7 +10,7 @@
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=for-the-badge&logo=githubpages&logoColor=white)](https://juliasivridi.github.io/Money_PWA/)
 
-A personal finance tracker built as a **Progressive Web App**. Runs in any browser and installs on Android/iOS/desktop as a standalone app. No backend — Google Sheets is the database, IndexedDB is the local cache.
+A personal finance tracker built as a **Progressive Web App**. Runs in any browser and installs on Android/iOS/desktop as a standalone app. No backend â€” Google Sheets is the database, IndexedDB is the local cache.
 
 **Live:** [juliasivridi.github.io/Money_PWA](https://juliasivridi.github.io/Money_PWA/)
 
@@ -18,19 +18,19 @@ A personal finance tracker built as a **Progressive Web App**. Runs in any brows
 
 ## Features
 
-- **Offline-first** — every write goes to IndexedDB first; an 800 ms debounced queue flushes to Google Sheets when online. The app is fully usable without a connection
-- **Four transaction types** — Expense, Income, Transfer (between accounts), and Debt (lent / borrowed), each with category, account, date, and comment
-- **Multi-currency** — accounts have their own currency; exchange rates fetched automatically from [fawazahmed0/currency-api](https://github.com/fawazahmed0/exchange-api) via jsDelivr CDN (no API key needed, includes RUB); each transaction stores both the original amount and the base-currency equivalent
-- **Custom numeric keyboard** — no native keyboard for amount entry; a clean 1–9 pad appears inline and works reliably on all mobile browsers
-- **Date picker** — DD.MM.YYYY display with native calendar popup via `showPicker()` on desktop; calendar icon always visible
-- **Accounts** — card, cash, savings, investment; opening balance; archive support; live balances updated immediately on every transaction; archived accounts still shown for historical transfers
-- **Categories** — custom icon (from Lucide set) and color; monthly budget limits with progress bars and ✓/✗ status
-- **Analytics — Yearly view** — income/expense bar chart with balance line; date range pickers + period chips (This year / 1Y / 2Y / 3Y); account filter for the balance calculation; tap a month to jump to monthly detail
-- **Analytics — Monthly view** — month navigation + date pickers + period chips (Month / 3M / 6M / Year); category donut with icon labels around the pie; per-category progress bars with today marker; income/expense toggle; average mode for multi-month periods
-- **Filters** — filter transactions by account, type, category, and date range
-- **Settings** — switch between any spreadsheet in your Google Drive; change base currency; sign out
-- **Light / dark theme** — follows OS preference automatically
-- **PWA** — installable on Android, iOS, and desktop; works as a standalone app with its own icon
+- **Offline-first** â€” every write goes to IndexedDB first; an 800 ms debounced queue flushes to Google Sheets when online. The app is fully usable without a connection
+- **Four transaction types** â€” Expense, Income, Transfer (between accounts), and Debt (lent / borrowed), each with category, account, date, and comment
+- **Multi-currency** â€” accounts have their own currency; exchange rates fetched automatically from [fawazahmed0/currency-api](https://github.com/fawazahmed0/exchange-api) via jsDelivr CDN (no API key needed, includes RUB); each transaction stores both the original amount and the base-currency equivalent
+- **Custom numeric keyboard** â€” no native keyboard for amount entry; a clean 1â€“9 pad appears inline and works reliably on all mobile browsers
+- **Date picker** â€” DD.MM.YYYY display with native calendar popup via `showPicker()` on desktop; calendar icon always visible
+- **Accounts** â€” card, cash, savings, investment; opening balance; archive support; live balances updated immediately on every transaction; archived accounts still shown for historical transfers
+- **Categories** â€” custom icon (from Lucide set) and color; monthly budget limits with progress bars and âœ“/âœ— status
+- **Analytics â€” Yearly view** â€” income/expense bar chart with balance line; date range pickers + period chips (This year / 1Y / 2Y / 3Y); account filter for the balance calculation; tap a month to jump to monthly detail
+- **Analytics â€” Monthly view** â€” month navigation + date pickers + period chips (Month / 3M / 6M / Year); category donut with icon labels around the pie; per-category progress bars with today marker; income/expense toggle; average mode for multi-month periods
+- **Filters** â€” filter transactions by account, type, category, and date range
+- **Settings** â€” switch between any spreadsheet in your Google Drive; change base currency; sign out
+- **Light / dark theme** â€” follows OS preference automatically
+- **PWA** â€” installable on Android, iOS, and desktop; works as a standalone app with its own icon
 
 ---
 
@@ -38,18 +38,18 @@ A personal finance tracker built as a **Progressive Web App**. Runs in any brows
 
 | Layer | Technology |
 |---|---|
-| ⚛️ Framework | React 19 + TypeScript 5 (strict) |
-| ⚡ Build | Vite 7 + vite-plugin-pwa (Workbox) |
-| 🎨 Styling | Tailwind CSS 3 + Radix UI primitives |
-| 🗄️ Remote storage | Google Sheets API v4 |
-| 💾 Local storage | Dexie 4 (IndexedDB) |
-| 🔄 State | Zustand 5 (persist for auth) |
-| 🔐 Auth | Google Identity Services (OAuth 2.0) |
-| 📋 Forms | react-hook-form + Zod |
-| 📊 Charts | Recharts |
-| 📅 Dates | date-fns |
-| 💱 Exchange rates | fawazahmed0/currency-api via jsDelivr (keyless) |
-| 🚀 Hosting | GitHub Pages (via GitHub Actions) |
+| âš›ï¸ Framework | React 19 + TypeScript 5 (strict) |
+| âš¡ Build | Vite 7 + vite-plugin-pwa (Workbox) |
+| ðŸŽ¨ Styling | Tailwind CSS 3 + Radix UI primitives |
+| ðŸ—„ï¸ Remote storage | Google Sheets API v4 |
+| ðŸ’¾ Local storage | Dexie 4 (IndexedDB) |
+| ðŸ”„ State | Zustand 5 (persist for auth) |
+| ðŸ” Auth | Google Identity Services (OAuth 2.0) |
+| ðŸ“‹ Forms | react-hook-form + Zod |
+| ðŸ“Š Charts | Recharts |
+| ðŸ“… Dates | date-fns |
+| ðŸ’± Exchange rates | fawazahmed0/currency-api via jsDelivr (keyless) |
+| ðŸš€ Hosting | GitHub Pages (via GitHub Actions) |
 
 ---
 
@@ -60,13 +60,13 @@ A personal finance tracker built as a **Progressive Web App**. Runs in any brows
 - Google account
 - Google Cloud project with **Google Sheets API v4** and **Google Drive API** enabled
 - OAuth 2.0 Client ID (type: Web application)
-- Node.js ≥ 18
+- Node.js â‰¥ 18
 
 ### Google Cloud Console
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
 2. Enable **Google Sheets API v4** and **Google Drive API**
-3. Create an **OAuth 2.0 Client ID** → type: Web application
+3. Create an **OAuth 2.0 Client ID** â†’ type: Web application
 4. Add to **Authorized JavaScript origins** (not Redirect URIs):
    ```
    http://localhost:5173
@@ -89,14 +89,14 @@ VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 
 ```bash
 npm run dev    # http://localhost:5173/Money_PWA/
-npm run build  # production build → dist/
+npm run build  # production build â†’ dist/
 ```
 
 ### Deploy to GitHub Pages
 
-1. Add repository secret in **Settings → Secrets and variables → Actions**:
+1. Add repository secret in **Settings â†’ Secrets and variables â†’ Actions**:
    - `VITE_GOOGLE_CLIENT_ID`
-2. Set **Pages source** to **GitHub Actions** (Settings → Pages)
+2. Set **Pages source** to **GitHub Actions** (Settings â†’ Pages)
 3. Every push to `main` triggers automatic build and deployment
 
 ---
@@ -109,11 +109,11 @@ All data lives in the user's **db_money** Google Spreadsheet, found or created a
 
 | Col | Field | Description |
 |-----|-------|-------------|
-| A | id | UUID (`txn_…`) |
+| A | id | UUID (`txn_â€¦`) |
 | B | date | ISO 8601 date (`YYYY-MM-DD`) |
 | C | type | `expense` / `income` / `transfer` / `debt_lent` / `debt_borrowed` |
 | D | amount | Amount in transaction currency |
-| E | currency | ISO 4217 code (`EUR`, `USD`, `RUB`, …) |
+| E | currency | ISO 4217 code (`EUR`, `USD`, `RUB`, â€¦) |
 | F | amount_base | Amount converted to base currency at time of entry |
 | G | account_id | Source account id |
 | H | category_id | Category id (empty for transfers/debts) |
@@ -129,7 +129,7 @@ All data lives in the user's **db_money** Google Spreadsheet, found or created a
 
 | Col | Field | Description |
 |-----|-------|-------------|
-| A | id | UUID (`acc_…`) |
+| A | id | UUID (`acc_â€¦`) |
 | B | name | Display name |
 | C | currency | ISO 4217 code |
 | D | type | `card` / `cash` / `savings` / `investment` |
@@ -143,7 +143,7 @@ All data lives in the user's **db_money** Google Spreadsheet, found or created a
 
 | Col | Field | Description |
 |-----|-------|-------------|
-| A | id | UUID (`cat_…`) |
+| A | id | UUID (`cat_â€¦`) |
 | B | name | Display name |
 | C | icon | Lucide icon name |
 | D | color | Hex color (`#rrggbb`) |
@@ -159,17 +159,15 @@ All data lives in the user's **db_money** Google Spreadsheet, found or created a
 
 ## Install as Mobile / Desktop App
 
-**Android:** Chrome prompts automatically, or use the browser menu → *Install app*
+**Android:** Chrome prompts automatically, or use the browser menu â†’ *Install app*
 
-**iOS:** Safari → Share button → *Add to Home Screen*
+**iOS:** Safari â†’ Share button â†’ *Add to Home Screen*
 
-**Desktop:** address bar → install icon (Chrome / Edge)
+**Desktop:** address bar â†’ install icon (Chrome / Edge)
 
 ---
 
 ## Documentation
 
-- **Product requirements:** [`docs/PRD.md`](docs/PRD.md)
-- **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - **Technical specification:** [`docs/tech-spec.md`](docs/tech-spec.md)
 
