@@ -1,6 +1,6 @@
 # Money PWA — Technical Specification
 
-**Version:** 1.1 · **Date:** 2026-06-10  
+**Version:** 1.2 · **Date:** 2026-06-12  
 **Repository:** D:\Projects\Money-PWA  
 **Stack:** React 19 · TypeScript 5.9 · Vite 7 · Zustand 5 · Dexie 4 · Google Sheets API v4
 
@@ -162,13 +162,12 @@ Money-PWA/
 │   ├── vite-env.d.ts                 Vite env type declarations
 │   │
 │   ├── api/                          All Google API calls (no fetch in components/stores)
-│   │   ├── sheetsClient.ts           Token management, HTTP wrapper, row-index cache
+│   │   ├── sheetsClient.ts           Token management, HTTP wrapper, row-index cache, deleteRowByEntityId
 │   │   ├── transactionsApi.ts        fetch/append/update transactions sheet
 │   │   ├── accountsApi.ts            fetch/append/update accounts sheet
 │   │   ├── categoriesApi.ts          fetch/append/update categories sheet
-│   │   ├── driveApi.ts               listUserSheets — Drive API v3
 │   │   ├── settingsApi.ts            loadSettings/saveSettings — settings!A1 JSON blob
-│   │   ├── spreadsheetSetup.ts       ensureSpreadsheet — find or create 'db_money'
+│   │   ├── spreadsheetSetup.ts       checkSpreadsheet / createSpreadsheet (drive.file scope; no silent search)
 │   │   └── seedOnboarding.ts         Write starter data for brand-new spreadsheets
 │   │
 │   ├── services/
@@ -176,6 +175,7 @@ Money-PWA/
 │   │   ├── syncService.ts            flush / pull / initialLoad / fullSync / scheduleFlush
 │   │   ├── offlineQueue.ts           enqueue / getPending / markDone / markFailed
 │   │   ├── authService.ts            loadGISScript / initAuth / setTokenClient
+│   │   ├── picker.ts                 Google Picker (openSpreadsheetPicker); requires VITE_GOOGLE_API_KEY
 │   │   └── exchangeRateService.ts    fetchExchangeRates from fawazahmed0/currency-api (jsDelivr CDN)
 │   │
 │   ├── store/                        One Zustand store per domain
@@ -212,6 +212,10 @@ Money-PWA/
 │   │   │   ├── CategoriesPage.tsx    Drag-and-drop sortable list, FAB
 │   │   │   └── CategoryModal.tsx     Create/edit: icon+color preview, name, expense/income limits
 │   │   │
+│   │   ├── help/
+│   │   │   └── HelpPage.tsx              Basics, data & sync, usage tips overlay
+│   │   ├── feedback/
+│   │   │   └── FeedbackPage.tsx          Posts to VITE_FEEDBACK_URL with app=Money
 │   │   ├── analytics/
 │   │   │   ├── AnalyticsPage.tsx          MonthBarChart + YearlyChart + MonthlyView
 │   │   │   ├── YearlyChart.tsx            ComposedChart: income/expense bars + balance line; date pickers + period chips
@@ -490,9 +494,10 @@ Additional localStorage key (not Zustand): `money-lastAccountId` — stores the 
 ```
 email
 profile
-https://www.googleapis.com/auth/spreadsheets
-https://www.googleapis.com/auth/drive.readonly
+https://www.googleapis.com/auth/drive.file
 ```
+
+`drive.file` grants access **only** to files this app created or that the user explicitly picked via the Google Picker — the app cannot list or search the rest of Drive. This replaces the old `spreadsheets + drive.readonly` pair.
 
 ### Sign-in flow (step by step)
 
@@ -515,11 +520,20 @@ https://www.googleapis.com/auth/drive.readonly
 ### AppShell first-launch setup
 
 10. `AppShell.useEffect` (runs once):
-    a. `fetchExchangeRates(baseCurrency)` — GET `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json` → stores in `exchangeRateStore` and caches to `settings!A1`.
-    b. `ensureSpreadsheet()` — searches Drive for `name='db_money' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`. If found, calls `setSpreadsheet(id, name)`. If not found, creates a new spreadsheet with 4 named sheets (`transactions`, `accounts`, `categories`, `settings`) and calls `setSpreadsheet`.
-    c. If spreadsheet was newly created → `seedOnboarding()`: writes headers and starter data (2 accounts, 3 categories, 1 expense).
-    d. `initialLoad()` — see §8.
-    e. `prefs.load()` — reads `settings!A1`, updates `baseCurrency` if stored.
+    a. `loadFromCache()` — reads all three Dexie tables into Zustand first; UI is usable before any network call.
+    b. `fetchExchangeRates(baseCurrency)` — GET fawazahmed0/currency-api (jsDelivr CDN) → stores in `exchangeRateStore` and caches to `settings!A1`.
+    c. `checkSpreadsheet()` — verifies the stored `spreadsheetId` via Drive `files/{id}` GET.
+       - Returns `'ready'` → `initialLoad()` → `prefs.load()`
+       - Returns `'setup'` → renders **SetupScreen** (user must choose create-new or pick-existing before the app is usable)
+
+### SetupScreen
+
+Shown when `checkSpreadsheet()` returns `'setup'` (first install, or after scope migration). Two actions:
+
+- **Create new spreadsheet** → `createSpreadsheet()` (Sheets API POST) → `seedOnboarding()` → `initialLoad()`
+- **Pick existing file** → `openSpreadsheetPicker()` from `src/services/picker.ts` (Google Picker dialog) → sets `spreadsheetId` → `initialLoad()`
+
+`picker.ts` loads `https://apis.google.com/js/api.js` lazily and opens the native Picker limited to spreadsheets. Requires `VITE_GOOGLE_API_KEY` env var (Cloud project API key, unrestricted or restricted to the Picker API).
 
 ### Token refresh
 
@@ -552,6 +566,7 @@ All API calls go through `sheetsRequest<T>(method, path, body?)`. Base URL: `htt
    a. markProcessing(localId)
    b. processQueueItem:
       - transaction create → appendTransaction (POST append)
+      - transaction delete → deleteRowByEntityId(SHEET_TRANSACTIONS, entityId)
       - transaction update → updateTransaction (PUT row)
       - account create/update / category create/update → same pattern
    c. markDone(localId) on success → deleted from queue
@@ -563,25 +578,28 @@ All API calls go through `sheetsRequest<T>(method, path, body?)`. Base URL: `htt
 #### `pull()` — fetch Sheets → update IndexedDB
 
 ```
-1. Parallel: fetchAllTransactions, fetchAllAccounts, fetchAllCategories
-2. Each returns [] if sheet is empty
-3. Parallel: upsertMany for each store
-4. setLastSyncAt(now())
+1. invalidateRowCache()  — another device may have reordered/removed rows since last flush
+2. Parallel: fetchAllTransactions, fetchAllAccounts, fetchAllCategories
+3. pendingIds = Set of entityIds with unsent local changes (from offlineQueue)
+4. Parallel: upsertMany(incoming, pendingIds) for each store
+5. setLastSyncAt(now())
 ```
 
-**`upsertMany` pattern (identical for all three stores):**
+**`upsertMany(incoming, pendingIds)` pattern:**
 
 ```
 1. existing = await db.TABLE.toArray()
 2. incomingIds = new Set(incoming.map(t => t.id))
-3. toDelete = existing.filter(t => !incomingIds.has(t.id))
+3. toDelete = existing.filter(t => !incomingIds.has(t.id) && !pendingIds.has(t.id))
+   ↑ entities with unsent local edits are NOT deleted even if absent from Sheets
 4. if toDelete.length > 0: db.TABLE.bulkDelete(toDelete.map(t => t.id))
-5. toStore = incoming.filter(item => !local || item.updated_at > local.updated_at)
+5. toStore = incoming.filter(item => !pendingIds.has(item.id) && (!local || item.updated_at > local.updated_at))
+   ↑ do not overwrite locally pending records with potentially stale Sheet data
 6. if toStore.length > 0: db.TABLE.bulkPut(toStore)
 7. set({ TABLE: (await db.TABLE.toArray()).sort(...) })
 ```
 
-This is a **true sync**: local records absent from Sheets are deleted. This prevents stale data from surviving across sessions.
+This is a **true sync** with **pending-item safety**: remote deletions propagate, but locally pending edits survive a pull without being overwritten or deleted.
 
 #### `initialLoad()` — on app startup
 
@@ -660,9 +678,9 @@ Called when `window` fires `online` event. Guards against concurrent execution w
   - Mobile: Radix `Sheet` (side="left", w-60) opened by hamburger in Header
   - `main flex-1 overflow-hidden` — renders one of: `TransactionList`, `AccountsPage`, `CategoriesPage`, `AnalyticsPage`, or `SettingsPage`
 
-**Settings:** When `settingsOpen === true`, `SettingsPage` replaces the entire `main` + sidebar area; Header shows a `ChevronLeft` back button instead of the hamburger.
+**Overlays:** `settingsOpen`, `helpOpen`, `feedbackOpen` each replace the `main` area; Header shows a `ChevronLeft` back button. Only one overlay is open at a time (opening one closes others).
 
-**Startup effect:** `fetchExchangeRates` → `ensureSpreadsheet` → `seedOnboarding` (if new) → `initialLoad` → `prefs.load`.
+**Startup sequence:** `loadFromCache` (immediate) → `fetchExchangeRates` → `checkSpreadsheet` → if ready: `initialLoad` + `prefs.load`; if setup: show SetupScreen.
 
 ---
 
@@ -684,7 +702,8 @@ Called when `window` fires `online` event. Guards against concurrent execution w
 **User avatar:**
 - `w-8 h-8 rounded-full border-2 border-border`
 - Shows `<img>` if `user.picture` exists, else initials div with `bg-primary`
-- Opens `DropdownMenu`: user name + email, Settings item, Sign out item
+- Opens `DropdownMenu`: user name + email, Settings, Help, Feedback, Sign out
+- Opening any overlay closes the others (`setSettingsOpen / setHelpOpen / setFeedbackOpen` each set the others to false)
 - Sign out: `flush()` → `clearLocalData()` → `logout()`
 
 ---
@@ -904,9 +923,8 @@ Active item: `bg-accent text-accent-foreground`. Inactive: `text-muted-foregroun
 
 **Spreadsheet card:**
 - Shows `spreadsheetName` (or `'db_money'` fallback)
-- "Change" button → `listUserSheets()` (Drive API, ordered by `modifiedTime desc`) → dropdown list (max-h-52, scrollable)
-- Selecting a sheet: clears local IndexedDB, invalidates row cache, calls `setSpreadsheet`, then `initialLoad()`
-- Currently selected sheet highlighted with `bg-accent/50` + "current" badge
+- "Change" button → `openSpreadsheetPicker()` (native Google Picker dialog) → on pick: clears local Dexie data, invalidates row cache, calls `setSpreadsheet(id, name)`, then `initialLoad()`
+- No Drive file list dropdown (removed with `driveApi.ts`)
 
 **Base currency card:**
 - Select: EUR / USD / RUB
@@ -1096,7 +1114,9 @@ There is no React Router. Navigation state lives entirely in `useUIStore.selecte
 | `'accounts'` | `AccountsPage` | Drawer item |
 | `'categories'` | `CategoriesPage` | Drawer item |
 | `'analytics'` | `AnalyticsPage` | Drawer item |
-| (any) + `settingsOpen=true` | `SettingsPage` | Header user menu → Settings |
+| (any) + `settingsOpen=true` | `SettingsPage` | Header avatar menu → Settings |
+| (any) + `helpOpen=true` | `HelpPage` | Header avatar menu → Help |
+| (any) + `feedbackOpen=true` | `FeedbackPage` | Header avatar menu → Feedback |
 
 **No deeplinks.** The app has no URL-based routing; the GitHub Pages URL is always `/Money_PWA/`.
 
@@ -1136,8 +1156,8 @@ There is no React Router. Navigation state lives entirely in `useUIStore.selecte
 | Node version | 20 (with npm cache) |
 | Install | `npm ci` |
 | Build | `npm run build` (`tsc -b && vite build`) |
-| Secret | `VITE_GOOGLE_CLIENT_ID` injected via `secrets.VITE_GOOGLE_CLIENT_ID` |
-| Publish | `peaceiris/actions-gh-pages@v4`, publish dir `./dist`, `GITHUB_TOKEN` |
+| Secrets | `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY` (for Picker), `VITE_FEEDBACK_URL` |
+| Publish | Official `actions/upload-pages-artifact` + `actions/deploy-pages` |
 
 **Vite build config:**
 - `base: '/Money_PWA/'`
@@ -1154,14 +1174,16 @@ There is no React Router. Navigation state lives entirely in `useUIStore.selecte
 
 1. **Clone** the repository.
 2. **Google Cloud Console** → Create a project → Enable *Google Sheets API* and *Google Drive API* → Create an OAuth2 client ID (Web application type) → Add your local dev origin and the GitHub Pages origin (`https://username.github.io`) to Authorized JavaScript origins.
-3. **Environment variable:** Create `.env.local` in project root:
+3. **Environment variables:** Create `.env.local` in project root:
    ```
    VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   VITE_GOOGLE_API_KEY=your-api-key          # Cloud project API key (for Google Picker)
+   VITE_FEEDBACK_URL=https://...             # optional; feedback form endpoint
    ```
 4. **Install:** `npm install`
 5. **Run dev server:** `npm run dev` — app served at `http://localhost:5173/Money_PWA/`
-6. **First sign-in:** Click "Sign in with Google"; consent screen appears; on success the app creates a `db_money` spreadsheet in your Google Drive and seeds starter data.
-7. **GitHub Actions secret:** In repo Settings → Secrets → Actions, add `VITE_GOOGLE_CLIENT_ID` with the same value.
+6. **First sign-in:** Click "Sign in with Google"; on success the app shows the **SetupScreen** — click "Create new spreadsheet" to create `db_money` and seed starter data, or "Pick existing" to open the Google Picker.
+7. **GitHub Actions secrets:** Add `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, and `VITE_FEEDBACK_URL` in repo Settings → Secrets → Actions.
 
 ---
 
