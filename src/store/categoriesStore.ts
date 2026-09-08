@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { db } from '@/services/db'
 import { enqueue } from '@/services/offlineQueue'
+import { scheduleFlush } from '@/services/syncService'
 import { generateId } from '@/utils/uuid'
 import { now } from '@/utils/dateUtils'
 import type { Category, CategoryInput } from '@/types/category'
@@ -11,7 +12,7 @@ interface CategoriesState {
   updateCategory: (id: string, patch: Partial<CategoryInput>) => Promise<void>
   deleteCategory: (id: string, transferToId: string) => Promise<void>
   reorder: (ids: string[]) => Promise<void>
-  upsertMany: (incoming: Category[]) => Promise<void>
+  upsertMany: (incoming: Category[], pendingIds?: Set<string>) => Promise<void>
   loadFromDb: () => Promise<void>
 }
 
@@ -26,6 +27,7 @@ export const useCategoriesStore = create<CategoriesState>((set, get) => ({
     await db.categories.add(category)
     await enqueue('category', 'create', category.id, category as unknown as Record<string, unknown>)
     set((s) => ({ categories: [...s.categories, category] }))
+    scheduleFlush()
     return category
   },
 
@@ -36,6 +38,7 @@ export const useCategoriesStore = create<CategoriesState>((set, get) => ({
     await db.categories.where('id').equals(id).modify(updated)
     await enqueue('category', 'update', id, updated as unknown as Record<string, unknown>)
     set((s) => ({ categories: s.categories.map(c => c.id === id ? updated : c) }))
+    scheduleFlush()
   },
 
   deleteCategory: async (id, transferToId) => {
@@ -50,7 +53,9 @@ export const useCategoriesStore = create<CategoriesState>((set, get) => ({
       await enqueue('transaction', 'update', t.id, updated as unknown as Record<string, unknown>)
     }
     await db.categories.where('id').equals(id).delete()
+    await enqueue('category', 'delete', id, { id } as Record<string, unknown>)
     set((s) => ({ categories: s.categories.filter(c => c.id !== id) }))
+    scheduleFlush()
   },
 
   reorder: async (ids) => {
@@ -65,17 +70,22 @@ export const useCategoriesStore = create<CategoriesState>((set, get) => ({
       await enqueue('category', 'update', cat.id, cat as unknown as Record<string, unknown>)
     }
     set({ categories: updated })
+    scheduleFlush()
   },
 
-  upsertMany: async (incoming) => {
+  upsertMany: async (incoming, pendingIds) => {
     const existing = await db.categories.toArray()
     const incomingIds = new Set(incoming.map(c => c.id))
     const existingMap = new Map(existing.map(c => [c.id, c]))
 
-    const toDelete = existing.filter(c => !incomingIds.has(c.id)).map(c => c.id)
+    // H1: don't delete categories that are in the pending queue (created offline, not yet in Sheets)
+    const toDelete = existing
+      .filter(c => !incomingIds.has(c.id) && !pendingIds?.has(c.id))
+      .map(c => c.id)
     if (toDelete.length > 0) await db.categories.bulkDelete(toDelete)
 
     const toStore = incoming.filter(item => {
+      if (pendingIds?.has(item.id)) return false
       const local = existingMap.get(item.id)
       return !local || item.updated_at > local.updated_at
     })

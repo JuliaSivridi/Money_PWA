@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { db } from '@/services/db'
 import { enqueue } from '@/services/offlineQueue'
+import { scheduleFlush } from '@/services/syncService'
 import { generateId } from '@/utils/uuid'
 import { now } from '@/utils/dateUtils'
 import { roundAmount } from '@/utils/design'
@@ -12,7 +13,7 @@ interface AccountsState {
   updateAccount: (id: string, patch: Partial<AccountInput>) => Promise<void>
   archiveAccount: (id: string) => Promise<void>
   adjustBalance: (id: string, delta: number) => Promise<void>
-  upsertMany: (incoming: Account[]) => Promise<void>
+  upsertMany: (incoming: Account[], pendingIds?: Set<string>) => Promise<void>
   loadFromDb: () => Promise<void>
 }
 
@@ -25,6 +26,7 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     await db.accounts.add(account)
     await enqueue('account', 'create', account.id, account as unknown as Record<string, unknown>)
     set((s) => ({ accounts: [...s.accounts, account] }))
+    scheduleFlush()
     return account
   },
 
@@ -35,6 +37,7 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     await db.accounts.where('id').equals(id).modify(updated)
     await enqueue('account', 'update', id, updated as unknown as Record<string, unknown>)
     set((s) => ({ accounts: s.accounts.map(a => a.id === id ? updated : a) }))
+    scheduleFlush()
   },
 
   archiveAccount: async (id) => {
@@ -52,15 +55,19 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     set((s) => ({ accounts: s.accounts.map(a => a.id === id ? updated : a) }))
   },
 
-  upsertMany: async (incoming) => {
+  upsertMany: async (incoming, pendingIds) => {
     const existing = await db.accounts.toArray()
     const incomingIds = new Set(incoming.map(a => a.id))
     const existingMap = new Map(existing.map(a => [a.id, a]))
 
-    const toDelete = existing.filter(a => !incomingIds.has(a.id)).map(a => a.id)
+    // H1: don't delete accounts that are in the pending queue (created offline, not yet in Sheets)
+    const toDelete = existing
+      .filter(a => !incomingIds.has(a.id) && !pendingIds?.has(a.id))
+      .map(a => a.id)
     if (toDelete.length > 0) await db.accounts.bulkDelete(toDelete)
 
     const toStore = incoming.filter(item => {
+      if (pendingIds?.has(item.id)) return false
       const local = existingMap.get(item.id)
       return !local || item.updated_at > local.updated_at
     })

@@ -1,9 +1,9 @@
 import { fetchAllTransactions, appendTransaction, updateTransaction as apiUpdateTransaction, ensureTransactionHeader } from '@/api/transactionsApi'
 import { fetchAllAccounts, appendAccount, updateAccount as apiUpdateAccount, ensureAccountHeader } from '@/api/accountsApi'
 import { fetchAllCategories, appendCategory, updateCategory as apiUpdateCategory, ensureCategoryHeader } from '@/api/categoriesApi'
-import { getPending, markProcessing, markDone, markFailed, getQueueLength } from '@/services/offlineQueue'
+import { getPending, markProcessing, markDone, markFailed, getQueueLength, resetProcessingItems } from '@/services/offlineQueue'
 import { invalidateRowCache, deleteRowByEntityId } from '@/api/sheetsClient'
-import { SHEET_TRANSACTIONS } from '@/utils/constants'
+import { SHEET_TRANSACTIONS, SHEET_CATEGORIES } from '@/utils/constants'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useCategoriesStore } from '@/store/categoriesStore'
@@ -28,6 +28,7 @@ async function processQueueItem(item: Awaited<ReturnType<typeof getPending>>[num
   } else if (entityType === 'category') {
     const c = payload as unknown as Category
     if (operationType === 'create') await appendCategory(c)
+    else if (operationType === 'delete') await deleteRowByEntityId(SHEET_CATEGORIES, item.entityId)
     else await apiUpdateCategory(c)
   }
 }
@@ -36,11 +37,23 @@ export async function flush(): Promise<void> {
   const items = await getPending()
   if (items.length === 0) return
 
+  // H2: create+update for the same entity collapse into a single create with the
+  // latest payload — so a failed create followed by an edit stays one append, not
+  // a duplicate row.  delete is always kept as its own separate operation.
   const latestMap = new Map<string, typeof items[0]>()
   for (const item of items) {
-    const key = `${item.entityType}:${item.entityId}:${item.operationType}`
+    const key = item.operationType === 'delete'
+      ? `${item.entityType}:${item.entityId}:delete`
+      : `${item.entityType}:${item.entityId}`
     const existing = latestMap.get(key)
-    if (!existing || item.createdAt > existing.createdAt) latestMap.set(key, item)
+    if (!existing || item.createdAt > existing.createdAt) {
+      // If the slot held a failed create and we're seeing a later update,
+      // keep operationType 'create' so we append, not update (row doesn't exist yet)
+      const op = existing?.operationType === 'create' && item.operationType === 'update'
+        ? 'create'
+        : item.operationType
+      latestMap.set(key, { ...item, operationType: op })
+    }
   }
   const latestIds = new Set(Array.from(latestMap.values()).map(i => i.localId!))
 
@@ -78,8 +91,8 @@ export async function pull(): Promise<void> {
   const pendingIds = new Set((await getPending()).map(i => i.entityId))
   await Promise.all([
     useTransactionsStore.getState().upsertMany(transactions, pendingIds),
-    useAccountsStore.getState().upsertMany(accounts),
-    useCategoriesStore.getState().upsertMany(categories),
+    useAccountsStore.getState().upsertMany(accounts, pendingIds),
+    useCategoriesStore.getState().upsertMany(categories, pendingIds),
   ])
   useSyncStore.getState().setLastSyncAt(now())
 }
@@ -88,6 +101,8 @@ export async function pull(): Promise<void> {
  *  the app does on startup — before exchange rates, Drive lookup and the
  *  Sheets pull — so the user never stares at "No transactions yet". */
 export async function loadFromCache(): Promise<void> {
+  // C4: items stuck in 'processing' after a reload mid-flush must be retried
+  await resetProcessingItems()
   await Promise.all([
     useTransactionsStore.getState().loadFromDb(),
     useAccountsStore.getState().loadFromDb(),
@@ -120,14 +135,20 @@ export async function initialLoad(): Promise<void> {
 
 let _flushTimer: ReturnType<typeof setTimeout> | null = null
 let _flushing = false
+let _scheduleAfterFlush = false
 
 export function scheduleFlush(): void {
+  // C3: if flush is in flight, record the request and drain again when it finishes
+  if (_flushing) { _scheduleAfterFlush = true; return }
   if (_flushTimer) clearTimeout(_flushTimer)
   _flushTimer = setTimeout(() => {
     _flushTimer = null
-    if (_flushing) return
     _flushing = true
-    flush().finally(() => { _flushing = false })
+    _scheduleAfterFlush = false
+    flush().finally(() => {
+      _flushing = false
+      if (_scheduleAfterFlush) scheduleFlush()
+    })
   }, 800)
 }
 

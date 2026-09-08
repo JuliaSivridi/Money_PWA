@@ -26,14 +26,19 @@ export default defineConfig({
       workbox: {
         runtimeCaching: [
           {
+            // Sheets data must always be fresh — never serve stale rows as truth
             urlPattern: /^https:\/\/sheets\.googleapis\.com\//,
-            handler: 'NetworkFirst',
-            options: { cacheName: 'sheets-api', networkTimeoutSeconds: 10 },
+            handler: 'NetworkOnly',
           },
           {
-            urlPattern: /^https:\/\/api\.frankfurter\.app\//,
-            handler: 'NetworkFirst',
-            options: { cacheName: 'exchange-rates', networkTimeoutSeconds: 10 },
+            // Exchange rates are updated daily; CacheFirst is fine.
+            // Offline fallback comes from localStorage (exchangeRateStore persist).
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/@fawazahmed0\/currency-api/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'exchange-rates',
+              expiration: { maxAgeSeconds: 86400 },
+            },
           },
           {
             urlPattern: /^https:\/\/accounts\.google\.com\/gsi\//,

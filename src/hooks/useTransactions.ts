@@ -17,7 +17,6 @@ export interface DateGroup {
   date: string
   label: string
   transactions: Transaction[]
-  dailyNet: number
 }
 
 export function useTransactionsByDate(): DateGroup[] {
@@ -32,17 +31,11 @@ export function useTransactionsByDate(): DateGroup[] {
     return Array.from(groups.entries())
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([date, txns]) => {
-        let dailyNet = 0
-        for (const t of txns) {
-          if (t.type === 'income') dailyNet += t.amount_base
-          else if (t.type === 'expense') dailyNet -= t.amount_base
-        }
         const sorted = [...txns].sort((a, b) => (b.time || '00:00').localeCompare(a.time || '00:00'))
         return {
           date,
           label: formatGroupLabel(date),
           transactions: sorted,
-          dailyNet,
         }
       })
   }, [transactions])

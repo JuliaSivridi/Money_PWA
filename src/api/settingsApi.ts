@@ -5,6 +5,7 @@ export interface Settings {
   base_currency?: string
   exchange_rates?: Record<string, number>
   analytics_account_ids?: string[]
+  collapsed_account_groups?: string[]
 }
 
 export async function loadSettings(): Promise<Settings> {

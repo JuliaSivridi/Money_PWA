@@ -140,11 +140,17 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     if (toStore.length > 0) await db.transactions.bulkPut(toStore)
 
     const all = await db.transactions.toArray()
-    set({ transactions: all.sort((a, b) => b.date.localeCompare(a.date)) })
+    set({ transactions: all.sort((a, b) => {
+      const d = b.date.localeCompare(a.date)
+      return d !== 0 ? d : b.created_at.localeCompare(a.created_at)
+    }) })
   },
 
   loadFromDb: async () => {
     const all = await db.transactions.toArray()
-    set({ transactions: all.sort((a, b) => b.date.localeCompare(a.date)) })
+    set({ transactions: all.sort((a, b) => {
+      const d = b.date.localeCompare(a.date)
+      return d !== 0 ? d : b.created_at.localeCompare(a.created_at)
+    }) })
   },
 }))

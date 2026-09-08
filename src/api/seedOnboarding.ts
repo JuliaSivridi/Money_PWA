@@ -24,8 +24,8 @@ export async function seedOnboarding(): Promise<void> {
   ]
 
   const accRows = [
-    [acc1Id, 'Cash (€)', 'EUR', 'cash', '0', 'FALSE', '1', ts, ts],
-    [acc2Id, 'Cash (₽)', 'RUB', 'cash', '0', 'FALSE', '2', ts, ts],
+    [acc1Id, 'Cash (€)', 'EUR', 'cash', '-10', 'FALSE', '1', ts, ts],  // balance after seed expense
+    [acc2Id, 'Cash (₽)', 'RUB', 'cash', '0',   'FALSE', '2', ts, ts],
   ]
 
   const catRows = [

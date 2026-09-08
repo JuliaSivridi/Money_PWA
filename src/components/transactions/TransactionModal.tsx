@@ -224,15 +224,23 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
       else type = values.debt_subtype === 'lent' ? 'debt_lent' : 'debt_borrowed'
 
       saveLastAccountId(values.account_id)
+      // Derive currency directly from the selected account at submit time so
+      // any watch/effect timing issues cannot cause a currency/account mismatch
+      const srcAccount = accounts.find(a => a.id === values.account_id)
+      const currency = srcAccount?.currency ?? values.currency
+      const dstAccount = accounts.find(a => a.id === values.to_account_id)
+      const toCurrency = dstAccount?.currency ?? values.to_currency
       const input = {
         date: values.date, time: editing?.time ?? currentTimeHHMM(), type,
         amount: parseFloat(values.amount) || 0,
-        currency: values.currency, amount_base: 0,
+        currency, amount_base: 0,
         account_id: values.account_id,
         category_ids: tab === 'transfer' || tab === 'debt' ? [] : values.category_ids,
         to_account_id: tab === 'transfer' ? values.to_account_id : '',
-        to_amount: tab === 'transfer' ? (parseFloat(values.to_amount) || parseFloat(values.amount) || 0) : 0,
-        to_currency: tab === 'transfer' ? values.to_currency : '',
+        to_amount: tab === 'transfer'
+          ? (toCurrency !== currency ? (parseFloat(values.to_amount) || 0) : (parseFloat(values.amount) || 0))
+          : 0,
+        to_currency: tab === 'transfer' ? toCurrency : '',
         debt_ref_id: values.debt_ref_id, comment: values.comment,
       }
       editing ? await updateTransaction(editing.id, input) : await addTransaction(input)
@@ -256,6 +264,11 @@ export function TransactionModal({ open, editing, copyFrom, onClose, onCopy }: P
   const watchToCurrency = watch('to_currency')
 
   const crossCurrency = tab === 'transfer' && watchToCurrency !== watchCurrency
+
+  // H5: clear to_amount when transfer becomes same-currency so the stale value doesn't persist
+  useEffect(() => {
+    if (!crossCurrency) setValue('to_amount', '')
+  }, [crossCurrency]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared keyboard value / handler
   const kbValue = activeField === 'to_amount' ? watchToAmount : watchAmount

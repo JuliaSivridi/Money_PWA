@@ -50,3 +50,9 @@ export async function getQueueLength(): Promise<number> {
 export async function removePendingForEntity(entityId: string): Promise<void> {
   await db.queue.where('entityId').equals(entityId).delete()
 }
+
+/** On startup, items stuck in 'processing' (interrupted mid-flush by a reload)
+ *  must be reset to 'pending' so they are retried. */
+export async function resetProcessingItems(): Promise<void> {
+  await db.queue.where('status').equals('processing').modify({ status: 'pending' })
+}

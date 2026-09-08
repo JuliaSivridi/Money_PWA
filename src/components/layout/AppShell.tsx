@@ -15,6 +15,7 @@ import { initialLoad, loadFromCache } from '@/services/syncService'
 import { checkSpreadsheet, createSpreadsheet } from '@/api/spreadsheetSetup'
 import { seedOnboarding } from '@/api/seedOnboarding'
 import { usePrefsStore } from '@/store/prefsStore'
+import { useSyncStore } from '@/store/syncStore'
 import { fetchExchangeRates } from '@/services/exchangeRateService'
 import { openSpreadsheetPicker } from '@/services/picker'
 import { useAuthStore } from '@/store/authStore'
@@ -79,17 +80,26 @@ export function AppShell() {
   const [needsSetup, setNeedsSetup] = useState(false)
   useSync()
 
+  // C6: prefs must load before fetchExchangeRates so we use the real base currency
   const continueSetup = async () => {
     await initialLoad()
     await usePrefsStore.getState().load()
+    await fetchExchangeRates(usePrefsStore.getState().baseCurrency)
   }
 
   useEffect(() => {
     const setup = async () => {
       await loadFromCache()   // instant UI from IndexedDB before any network work
-      await fetchExchangeRates(usePrefsStore.getState().baseCurrency)
-      if (await checkSpreadsheet() === 'setup') { setNeedsSetup(true); return }
-      await continueSetup()
+      // Offline: if spreadsheetId absent → show SetupScreen without a network call
+      const { spreadsheetId } = useAuthStore.getState()
+      if (!spreadsheetId) { setNeedsSetup(true); return }
+      try {
+        if (await checkSpreadsheet() === 'setup') { setNeedsSetup(true); return }
+        await continueSetup()
+      } catch {
+        // Network unavailable — continue with cached data and persisted exchange rates
+        useSyncStore.getState().setSyncError('Offline — cached data shown')
+      }
     }
     void setup()
   }, [])

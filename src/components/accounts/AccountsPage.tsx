@@ -5,6 +5,7 @@ import { AccountsFilterPanel } from './AccountsFilterPanel'
 import { useAccountsStore } from '@/store/accountsStore'
 import { useTransactionsStore } from '@/store/transactionsStore'
 import { useUIStore } from '@/store/uiStore'
+import { usePrefsStore } from '@/store/prefsStore'
 import { formatAmount } from '@/utils/currencyUtils'
 import { DEFAULT_ENTITY_COLOR, ON_COLOR_TEXT, ICON_SIZES } from '@/utils/design'
 import { FAB } from '@/components/common/FAB'
@@ -37,12 +38,15 @@ function AccountRow({ account, onClick }: { account: Account; onClick: () => voi
   )
 }
 
-function Section({ title, accounts, Icon, onEdit }: { title: string; accounts: Account[]; Icon: React.FC<{ size?: number }>; onEdit: (a: Account) => void }) {
-  const [open, setOpen] = useState(true)
+function Section({ type, title, accounts, Icon, onEdit }: {
+  type: string; title: string; accounts: Account[]; Icon: React.FC<{ size?: number }>; onEdit: (a: Account) => void
+}) {
+  const { collapsedAccountGroups, toggleAccountGroup } = usePrefsStore()
+  const open = !collapsedAccountGroups.includes(type)
   if (accounts.length === 0) return null
   return (
     <div className="mb-2">
-      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+      <button onClick={() => void toggleAccountGroup(type)} className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         <Icon size={16} />
         <span>{title}</span>
@@ -93,6 +97,7 @@ export function AccountsPage() {
             {(['cash', 'card', 'savings', 'investment'] as AccountType[]).map(type => (
               <Section
                 key={type}
+                type={type}
                 title={TYPE_CONFIG[type].label}
                 Icon={TYPE_CONFIG[type].Icon}
                 accounts={active.filter(a => a.type === type)}
