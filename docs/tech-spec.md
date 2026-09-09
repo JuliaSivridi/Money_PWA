@@ -1,6 +1,6 @@
 # Money PWA — Technical Specification
 
-**Version:** 1.2 · **Date:** 2026-06-12  
+**Version:** 1.3 · **Date:** 2026-09-10  
 **Repository:** D:\Projects\Money-PWA  
 **Stack:** React 19 · TypeScript 5.9 · Vite 7 · Zustand 5 · Dexie 4 · Google Sheets API v4
 
@@ -206,7 +206,7 @@ Money-PWA/
 │   │   │
 │   │   ├── accounts/
 │   │   │   ├── AccountsPage.tsx      Sections (cash/card/savings/investment), archive toggle
-│   │   │   └── AccountModal.tsx      Create/edit: color swatch + name, currency, type, opening balance
+│   │   │   └── AccountModal.tsx      Create/edit: color swatch + name, currency, type, balance field
 │   │   │
 │   │   ├── categories/
 │   │   │   ├── CategoriesPage.tsx    Drag-and-drop sortable list, FAB
@@ -404,27 +404,28 @@ Database name changed from `MoneyDB` to `MoneyDB2` to avoid Dexie's "cannot chan
 
 Spreadsheet title constant: `SPREADSHEET_TITLE = 'db_money'`
 
-#### Sheet: `transactions` (range `transactions!A:O`)
+#### Sheet: `transactions` (range `transactions!A:P`)
 
 | Col | Index | Field | Format |
 |---|---|---|---|
 | A | 0 | `id` | string, e.g. `txn_a1b2c3d4` |
 | B | 1 | `date` | `yyyy-MM-dd` |
-| C | 2 | `type` | `expense` \| `income` \| `transfer` \| `debt_lent` \| `debt_borrowed` |
-| D | 3 | `amount` | decimal string, e.g. `42.50` |
-| E | 4 | `currency` | ISO code, e.g. `EUR` |
-| F | 5 | `amount_base` | decimal string |
-| G | 6 | `account_id` | `acc_` prefixed string |
-| H | 7 | `category_ids` | comma-separated IDs, e.g. `cat_abc,cat_xyz` |
-| I | 8 | `to_account_id` | `acc_` prefixed or empty |
-| J | 9 | `to_amount` | decimal string or `0` |
-| K | 10 | `to_currency` | ISO code or empty |
-| L | 11 | `debt_ref_id` | transaction ID or empty |
-| M | 12 | `comment` | string |
-| N | 13 | `created_at` | ISO 8601 datetime |
-| O | 14 | `updated_at` | ISO 8601 datetime |
+| C | 2 | `time` | `HH:MM`, defaults to `00:00` |
+| D | 3 | `type` | `expense` \| `income` \| `transfer` \| `debt_lent` \| `debt_borrowed` |
+| E | 4 | `amount` | decimal string, e.g. `42.50` |
+| F | 5 | `currency` | ISO code, e.g. `EUR` |
+| G | 6 | `amount_base` | decimal string |
+| H | 7 | `account_id` | `acc_` prefixed string |
+| I | 8 | `category_ids` | comma-separated IDs, e.g. `cat_abc,cat_xyz` |
+| J | 9 | `to_account_id` | `acc_` prefixed or empty |
+| K | 10 | `to_amount` | decimal string or `0` |
+| L | 11 | `to_currency` | ISO code or empty |
+| M | 12 | `debt_ref_id` | transaction ID or empty |
+| N | 13 | `comment` | string |
+| O | 14 | `created_at` | ISO 8601 datetime |
+| P | 15 | `updated_at` | ISO 8601 datetime |
 
-Header row: `id,date,type,amount,currency,amount_base,account_id,category_ids,to_account_id,to_amount,to_currency,debt_ref_id,comment,created_at,updated_at`
+Header row: `id,date,time,type,amount,currency,amount_base,account_id,category_ids,to_account_id,to_amount,to_currency,debt_ref_id,comment,created_at,updated_at`
 
 #### Sheet: `accounts` (range `accounts!A:J`)
 
@@ -462,10 +463,10 @@ Header row: `id,date,type,amount,currency,amount_base,account_id,category_ids,to
 Single cell `A1` contains a JSON blob:
 
 ```json
-{ "base_currency": "EUR", "exchange_rates": { "USD": 1.08, "RUB": 95.4, ... } }
+{ "base_currency": "EUR", "collapsed_account_groups": ["savings"], "exchange_rates": { "USD": 1.08, "RUB": 95.4, ... } }
 ```
 
-Exchange rates are cached here as a fallback for when the fawazahmed0/currency-api (jsDelivr CDN) is unreachable.
+Exchange rates are cached here as a fallback for when the fawazahmed0/currency-api (jsDelivr CDN) is unreachable. `collapsed_account_groups` stores which account type sections the user has collapsed in AccountsPage; persisted cross-device via `prefsStore`.
 
 ---
 
@@ -483,7 +484,9 @@ Persisted by Zustand `persist` middleware. Only auth/session data; not transacti
 
 **`isAuthenticated`** is not persisted — it is recomputed on startup from the token validity check.
 
-Additional localStorage key (not Zustand): `money-lastAccountId` — stores the last account selected in TransactionModal, used to pre-fill the account field on next open.
+Additional localStorage keys (not Zustand):
+- `money-lastAccountId` — last account selected in TransactionModal; used to pre-fill account field on next open
+- `money-exchange-rates` — `exchangeRateStore` Zustand persist; stores `{ rates, baseCurrency }` so exchange rates survive reload and are available offline immediately
 
 ---
 
@@ -521,10 +524,11 @@ https://www.googleapis.com/auth/drive.file
 
 10. `AppShell.useEffect` (runs once):
     a. `loadFromCache()` — reads all three Dexie tables into Zustand first; UI is usable before any network call.
-    b. `fetchExchangeRates(baseCurrency)` — GET fawazahmed0/currency-api (jsDelivr CDN) → stores in `exchangeRateStore` and caches to `settings!A1`.
+    b. If no `spreadsheetId` in `authStore` → show **SetupScreen** immediately.
     c. `checkSpreadsheet()` — verifies the stored `spreadsheetId` via Drive `files/{id}` GET.
-       - Returns `'ready'` → `initialLoad()` → `prefs.load()`
-       - Returns `'setup'` → renders **SetupScreen** (user must choose create-new or pick-existing before the app is usable)
+       - Returns `'setup'` → renders **SetupScreen** (user must choose create-new or pick-existing)
+       - Returns `'ready'` → `initialLoad()` → `prefs.load()` → `fetchExchangeRates(baseCurrency)` (uses the user's actual base currency loaded from settings)
+    d. Any network error in steps b–c is caught; `SyncStatusBanner` shows "Offline — cached data shown" and the app continues with IndexedDB data.
 
 ### SetupScreen
 
@@ -614,7 +618,7 @@ This is a **true sync** with **pending-item safety**: remote deletions propagate
 
 #### `scheduleFlush()` — debounced background push
 
-Called after every write action (addTransaction, updateTransaction, etc.). Debounces with a 800 ms timeout. Guards against re-entrancy with `_flushing` flag.
+Called after every write action across all three stores (transactions, accounts, categories). Debounces with an 800 ms timeout. If `flush()` is currently running (`_flushing = true`), sets `_scheduleAfterFlush = true` instead of starting a new timeout; when `flush()` finishes it checks this flag and runs again immediately, draining any writes that arrived mid-flush.
 
 #### `fullSync()` — network reconnect
 
@@ -635,10 +639,10 @@ Called when `window` fires `online` event. Guards against concurrent execution w
 
 | Function | HTTP | Endpoint | Notes |
 |---|---|---|---|
-| `fetchAllTransactions` | GET | `values/transactions!A:O` | Skips row 0 (header), skips rows with empty col A |
-| `appendTransaction` | POST | `values/transactions!A:O:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS` | |
-| `updateTransaction` | PUT | `values/transactions!A{n}:O{n}?valueInputOption=RAW` | Fallback: append if row not found |
-| `ensureTransactionHeader` | GET + PUT | `values/transactions!A1:O1` | Writes header only if row 1 is empty |
+| `fetchAllTransactions` | GET | `values/transactions!A:P` | Skips row 0 (header), skips rows with empty col A |
+| `appendTransaction` | POST | `values/transactions!A:P:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS` | |
+| `updateTransaction` | PUT | `values/transactions!A{n}:P{n}?valueInputOption=RAW` | Fallback: append if row not found |
+| `ensureTransactionHeader` | GET + PUT | `values/transactions!A1:P1` | Writes header only if row 1 is empty |
 | (same pattern for accounts, categories) | | | |
 | `ensureSpreadsheet` | GET Drive + POST Sheets | | Creates spreadsheet if not found |
 | `listUserSheets` | GET Drive | `files?q=mimeType=...&orderBy=modifiedTime+desc` | |
@@ -680,7 +684,7 @@ Called when `window` fires `online` event. Guards against concurrent execution w
 
 **Overlays:** `settingsOpen`, `helpOpen`, `feedbackOpen` each replace the `main` area; Header shows a `ChevronLeft` back button. Only one overlay is open at a time (opening one closes others).
 
-**Startup sequence:** `loadFromCache` (immediate) → `fetchExchangeRates` → `checkSpreadsheet` → if ready: `initialLoad` + `prefs.load`; if setup: show SetupScreen.
+**Startup sequence:** `loadFromCache` (immediate) → `checkSpreadsheet` → if ready: `initialLoad` → `prefs.load` → `fetchExchangeRates(baseCurrency)`; if setup: show SetupScreen. Network errors at any step are caught; app continues with cached data and shows "Offline" banner.
 
 ---
 
@@ -748,7 +752,6 @@ Active item: `bg-accent text-accent-foreground`. Inactive: `text-muted-foregroun
 
 **Date group header:**
 - Left: formatted label (e.g. `14 Jun · Saturday` or `14 Jun 2023 · Wednesday` for past years)
-- Right: daily net in `text-green-400` (positive) or `text-red-400` (negative), via `amount_base`
 
 **Empty state:** `Wallet` icon (40px, opacity-20), "No transactions yet", "+ Add transaction" ghost button.
 
@@ -813,7 +816,8 @@ Active item: `bg-accent text-accent-foreground`. Inactive: `text-muted-foregroun
 **Section order (explicit):** `['cash', 'card', 'savings', 'investment']`
 
 **Section component:**
-- Collapsible (default open); `ChevronDown` / `ChevronRight` toggle
+- Collapsible; collapse state persisted cross-device via `prefsStore.collapsedAccountGroups` → Sheets `settings!A1`
+- `ChevronDown` / `ChevronRight` toggle; `toggleAccountGroup(type)` writes to Sheets immediately
 - Header: icon + label + count (right-aligned)
 - Sections with 0 accounts render null
 
@@ -825,6 +829,8 @@ Active item: `bg-accent text-accent-foreground`. Inactive: `text-muted-foregroun
 **Archived section:** Hidden by default; toggled by "Show/Hide archived (N)" text button.
 
 **Open debts section:** Rendered below account sections. Shows debt transactions where `!debt_ref_id` and whose `id` does not appear as anyone's `debt_ref_id`. Amount in `text-red-400` (lent) or `text-green-400` (borrowed).
+
+**AccountModal — edit mode:** The balance field label changes from "Opening balance" (create mode) to "Current balance" (edit mode). Saving in edit mode writes `balance` directly via `updateAccount`, allowing the user to correct a drifted balance without touching the spreadsheet.
 
 **Empty state:** `CreditCard` icon (40px, opacity-20), "No accounts yet".
 
@@ -1164,8 +1170,8 @@ There is no React Router. Navigation state lives entirely in `useUIStore.selecte
 - `resolve.alias: '@' → './src'`
 - PWA: `registerType: 'autoUpdate'`, manifest `theme_color: '#e07e38'`
 - Workbox runtime caching:
-  - `sheets.googleapis.com` → `NetworkFirst`, `networkTimeoutSeconds: 10`, cache `sheets-api`
-  - `cdn.jsdelivr.net` (fawazahmed0/currency-api) → `NetworkFirst`, `networkTimeoutSeconds: 10`, cache `exchange-rates`
+  - `sheets.googleapis.com` → `NetworkOnly` (Sheets API writes must never be served from cache)
+  - `cdn.jsdelivr.net` (fawazahmed0/currency-api) → `CacheFirst`, max-age 24h, cache `exchange-rates`
   - `accounts.google.com/gsi` → `NetworkOnly` (auth cannot be cached)
 
 ---
@@ -1214,12 +1220,16 @@ On **delete**: reverse old delta only.
 Input: items[] sorted by createdAt ASC
 
 latestMap = Map<key, item>
-  key = "${entityType}:${entityId}:${operationType}"
+  key for non-deletes = "${entityType}:${entityId}"
+  key for deletes     = "${entityType}:${entityId}:delete"
 
 For each item:
   existing = latestMap.get(key)
   if !existing OR item.createdAt > existing.createdAt:
     latestMap.set(key, item)
+
+// A later 'create' + 'update' for the same entity collapse to a single create:
+// only the latest item per key survives; its operationType is used as-is.
 
 latestIds = Set of localIds from latestMap.values()
 
