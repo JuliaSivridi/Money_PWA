@@ -1,6 +1,6 @@
 # Money PWA — Product Requirements Document
 
-> Version 0.3.0 · Status: Draft · Updated: 2026-06-10
+> Version 0.4.0 · Status: Draft · Updated: 2026-09-10
 
 ---
 
@@ -119,12 +119,17 @@ On edit or delete, the previous effect is reversed before the new one is applied
 
 ### Currency conversion
 
-On app startup (after auth, before `initialLoad`):
+On app startup, after `prefs.load()` (so the user's chosen base currency is known):
 
-1. `fetchExchangeRates()` — GET `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json` (no API key required). Supports EUR, USD, RUB, GBP, and many others.
-2. Rates stored in `exchangeRateStore` (in-memory only; also written to `settings` sheet as a JSON blob for reference).
-3. Every new transaction with a non-base currency gets `amount_base = amount * rate` computed at write time and stored permanently. Historical `amount_base` values are never recalculated retroactively.
-4. If the fetch fails, a warning banner is shown and the last known rate (from `settings` sheet) is used.
+1. `fetchExchangeRates(baseCurrency)` — GET `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json` (no API key required). Supports EUR, USD, RUB, GBP, and many others.
+2. Rates stored in `exchangeRateStore`, which is **persisted to `localStorage`** (key `money-exchange-rates`) via Zustand `persist`. Rates are therefore available immediately on the next load without a network round-trip.
+3. Also written to `settings` sheet as a JSON blob for reference.
+4. Every new transaction with a non-base currency gets `amount_base = amount * rate` computed at write time and stored permanently. Historical `amount_base` values are never recalculated retroactively.
+5. If the fetch fails, the previously persisted rates from `localStorage` are used silently (no banner unless rates were never fetched before).
+
+### Offline mode
+
+On startup, `loadFromCache()` is called first (before any network call), so the UI is populated from IndexedDB immediately. If the subsequent network calls fail (Sheets unreachable), `SyncStatusBanner` shows "Offline — cached data shown" and the app remains fully usable with local data. Writes are queued and flushed when connectivity is restored.
 
 ---
 
@@ -238,12 +243,13 @@ Money-PWA/
 |---|---|---|
 | id | string | `txn_<8hex>` |
 | date | string | `YYYY-MM-DD` |
+| time | string | `HH:MM`; defaults to current wall-clock time |
 | type | `'expense' \| 'income' \| 'transfer' \| 'debt_lent' \| 'debt_borrowed'` | |
 | amount | number | Positive value in account currency |
 | currency | string | 3-letter ISO code (`EUR`, `RUB`, `USD`) |
 | amount_base | number | Converted to base currency at write time |
 | account_id | string | Source account |
-| category_id | string | Required for expense/income; empty for transfer/debt |
+| category_ids | string[] | Up to 2 category IDs; required for expense/income; empty for transfer/debt |
 | to_account_id | string | Destination account (transfer only) |
 | to_amount | number | Amount credited (transfer only; may differ from `amount` for FX) |
 | to_currency | string | Destination currency (transfer only) |
@@ -298,6 +304,7 @@ Money-PWA/
 | `base_currency` | `'EUR'` / `'USD'` / `'RUB'` |
 | `exchange_rates` | JSON `{ EUR:1, RUB:0.0095, ... }` relative to base; updated on each startup |
 | `spreadsheet_id` | Google Sheets file ID (also in localStorage) |
+| `collapsed_account_groups` | JSON string[] of account type keys whose sections are collapsed on the Accounts screen; synced cross-device |
 
 ---
 
@@ -311,19 +318,20 @@ Money-PWA/
 |---|---|
 | A | id |
 | B | date |
-| C | type |
-| D | amount |
-| E | currency |
-| F | amount_base |
-| G | account_id |
-| H | category_id |
-| I | to_account_id |
-| J | to_amount |
-| K | to_currency |
-| L | debt_ref_id |
-| M | comment |
-| N | created_at |
-| O | updated_at |
+| C | time |
+| D | type |
+| E | amount |
+| F | currency |
+| G | amount_base |
+| H | account_id |
+| I | category_ids (comma-separated) |
+| J | to_account_id |
+| K | to_amount |
+| L | to_currency |
+| M | debt_ref_id |
+| N | comment |
+| O | created_at |
+| P | updated_at |
 
 **Sheet: `accounts`**
 
@@ -338,6 +346,7 @@ Money-PWA/
 | G | sort_order |
 | H | created_at |
 | I | updated_at |
+| J | color |
 
 **Sheet: `categories`**
 
@@ -372,19 +381,24 @@ queue         ++localId, status, entityType, entityId, createdAt
 
 ## 7. Authentication & First-Launch Setup
 
-Same flow as Tasks PWA:
+**Startup sequence:**
 
-1. `ensureSpreadsheet()` — searches Drive for `db_money`. If found, use it. If not, create it and call `seedOnboarding()`.
-2. `seedOnboarding()` — writes sheet headers and a small set of starter accounts and categories via a single `values:batchUpdate`.
-3. `initialLoad()` — `ensureHeader()` all sheets → `flush()` → `pull()`.
-4. `usePrefsStore.load()` — reads `settings!A1` and restores base currency and other prefs.
-5. `fetchExchangeRates()` — fetches rates; falls back to cached value from settings if network unavailable.
+1. `loadFromCache()` — reads IndexedDB into Zustand; UI is populated immediately (no blank screen).
+2. If no `spreadsheetId` in `authStore` → show `SetupScreen` (user creates a new spreadsheet or picks an existing one via Drive Picker).
+3. `checkSpreadsheet()` — verifies the linked spreadsheet is still accessible. If it returns `'setup'`, shows `SetupScreen` again.
+4. `initialLoad()` — `ensureHeader()` all sheets → `flush()` → `pull()`.
+5. `usePrefsStore.load()` — reads `settings!A1` and restores base currency, collapsed groups, and other prefs.
+6. `fetchExchangeRates(baseCurrency)` — fetches rates using the user's actual base currency. Falls back to persisted `localStorage` rates if network unavailable.
+
+If steps 3–6 throw (network down), `SyncStatusBanner` shows "Offline — cached data shown" and the app continues with cached data.
+
+**On first use:** `SetupScreen` creates a new spreadsheet and calls `seedOnboarding()`, which writes headers and sample data via a single `values:batchUpdate`.
 
 **Seed accounts:**
 
 | Name | Currency | Type | Balance |
 |---|---|---|---|
-| Cash (€) | EUR | cash | 0 |
+| Cash (€) | EUR | cash | −10 (reflects the seed expense) |
 | Cash (₽) | RUB | cash | 0 |
 
 **Seed categories (expenses):**
@@ -397,18 +411,15 @@ Each with a default icon and color. Users are expected to customise the list imm
 
 ## 8. Synchronization / API Layer
 
-Identical algorithm to Tasks PWA (see Tasks PWA tech-spec §8):
-
-- Write path: Dexie + queue → debounced 800 ms `flush()` → Sheets API.
-- Deduplication by `(entityType, entityId, operationType)` keeping the most recent `createdAt`.
+- Write path: Dexie + queue → debounced 800 ms `flush()` → Sheets API. `scheduleFlush()` is called from all three entity stores (transactions, accounts, categories) after every mutation.
+- Deduplication in `flush()`: items keyed by `entityType:entityId` (or `entityType:entityId:delete` for deletes); only the latest by `createdAt` is sent. A `create` + `update` for the same entity collapses to a single `create` (preserving the create operation type so the row is appended, not updated on a non-existent row).
+- Items stuck in `processing` status after a mid-flush reload are reset to `pending` on startup (`resetProcessingItems()`).
+- If `flush()` is in flight when `scheduleFlush()` is called, the request is queued and a second drain runs immediately after the first completes.
 - Retry up to 5 times; items with `retryCount >= 5` excluded from `getPending()`.
-- Pull: Sheets → `upsertMany()` with `updated_at` conflict resolution → Dexie `bulkPut` → Zustand.
-- `useSync` hook: `online` → `fullSync()`; `visibilitychange` (stale > 5 min) → `fullSync()`; `pagehide` → `flush()`.
+- Pull: Sheets → `upsertMany()` with `updated_at` LWW resolution → Dexie `bulkPut` → Zustand. All three entity types (`transactions`, `accounts`, `categories`) pass `pendingIds` to `upsertMany()` — entities still in the queue are never overwritten by a pull.
+- `useSync` hook: `online` → `fullSync()`; `pagehide` → `flush()`.
 - 401 → silent token refresh → one retry; second 401 throws.
-
-**Additional for Money:**
-
-When `flush()` processes a `transaction/create`, `transaction/update`, or `transaction/delete` queue item, it must also enqueue an `account/update` for each affected account (with the adjusted balance). The balance update is computed locally from the Dexie record and the reversed/applied transaction delta, so even if the account row has a stale Sheets value, the local Dexie balance is authoritative.
+- Workbox service worker: Sheets API (`sheets.googleapis.com`) is `NetworkOnly` (never cached). Exchange rate CDN (`cdn.jsdelivr.net/…/currency-api`) is `CacheFirst` with 24 h TTL. Google Sign-In scripts are `NetworkOnly`.
 
 ---
 
@@ -428,7 +439,7 @@ Settings opens as an overlay (same as Tasks PWA: boolean `settingsOpen` in `uiSt
 
 ### Transactions (default view)
 
-- **Data:** all transactions sorted by `date` descending, grouped by date. Each group header shows the date and the net daily total.
+- **Data:** all transactions sorted by `date` descending, then `created_at` descending within a date, grouped by date. Each group header shows the date.
 - **Top bar:** total balance across all non-archived, non-investment accounts in base currency. Filter icon opens `FilterBar`.
 - **FilterBar:** Account (multi-select), Type (multi-select: expense/income/transfer/debt), Category (multi-select), Date range (from–to). Same chip-based UI as Tasks PWA filter bar.
 - **Each row:** category icon+color circle | category name + account name | amount (red for expense/debt_lent, green for income/debt_borrowed, grey for transfer). Transfer rows show "Account A → Account B".
@@ -465,7 +476,7 @@ Type selector at top (tabs or segmented control): **Expense · Income · Transfe
 
 ### Accounts
 
-Sections (grouped by `type`), each collapsible:
+Sections (grouped by `type`), each collapsible. Collapsed state is stored in `prefsStore.collapsedAccountGroups` and synced to `settings!A1` so it persists across devices and reloads.
 
 - **Cards & Accounts** (`card`) — name, currency symbol, balance
 - **Savings** (`savings`) — same
@@ -476,7 +487,7 @@ FAB (+): opens `AccountModal`.
 Tap account row: opens `AccountModal` in edit mode (not transaction list — per design decision).
 "Show archived" toggle at bottom.
 
-**`AccountModal` fields:** Name, Currency (selector), Type (selector), Opening balance (for new accounts), Archive toggle (edit mode only).
+**`AccountModal` fields:** Name, Currency (selector), Type (selector), Opening balance (create mode) / Current balance (edit mode — editable to correct a drifted value without touching the spreadsheet), Archive toggle (edit mode only).
 
 ---
 

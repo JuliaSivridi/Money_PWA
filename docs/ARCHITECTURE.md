@@ -1,6 +1,6 @@
 # Money PWA — Architecture
 
-> Version 0.2.0 · 2026-06-10
+> Version 0.3.0 · 2026-09-10
 
 ---
 
@@ -129,47 +129,56 @@ db.version(1).stores({
 
 | Store | Persisted | Contents |
 |---|---|---|
-| `authStore` | ✅ localStorage | user, accessToken, tokenExpiry, spreadsheetId |
+| `authStore` | ✅ localStorage (`money-auth`) | user, accessToken, tokenExpiry, spreadsheetId |
 | `transactionsStore` | ❌ | transactions[], CRUD actions, upsertMany |
 | `accountsStore` | ❌ | accounts[], CRUD actions, adjustBalance |
 | `categoriesStore` | ❌ | categories[], CRUD + reorder, upsertMany |
-| `exchangeRateStore` | ❌ | rates{}, baseCurrency |
-| `prefsStore` | ❌ (saved to Sheets settings) | baseCurrency |
+| `exchangeRateStore` | ✅ localStorage (`money-exchange-rates`) | rates{}, baseCurrency — survives reload for offline use |
+| `prefsStore` | ✅ Sheets `settings!A1` | baseCurrency, collapsedAccountGroups — loaded via `load()`, saved via `save()` / `toggleAccountGroup()` |
 | `syncStore` | ❌ | isSyncing, isOnline, pendingCount, syncError |
 | `uiStore` | ❌ | selectedView, filterState, analyticsMonth |
 
-### Write path (identical to Tasks PWA)
+### Write path
 
 ```
 User action
     │
     ▼
-Zustand store action
-    ├── 1. db.[table].put(entity)        Dexie write (sync)
+Zustand store action  (transactionsStore / accountsStore / categoriesStore)
+    ├── 1. db.[table].put(entity)        Dexie write
     ├── 2. enqueue(entityType, op, id)   queue table
     ├── 3. set({ ... })                  in-memory → UI re-renders
-    └── 4. scheduleFlush()               800ms debounce
+    └── 4. scheduleFlush()               800 ms debounce (called from all 3 stores)
                 │
                 ▼
           syncService.flush()
-                ├── dedup by (entityType, entityId, operationType)
-                ├── Sheets API write
+                ├── dedup: key = entityType:entityId (or :delete for deletes)
+                │         create+update → single create; latest createdAt wins
+                ├── if _flushing: set _scheduleAfterFlush flag; drain again on finish
+                ├── Sheets API write per item
                 └── invalidateRowCache()
 ```
 
 **Balance updates** are part of the same write: when a transaction is created/edited/deleted, `accountsStore.adjustBalance(accountId, delta)` is called within the same action, which also enqueues an `account/update` for the affected account(s).
 
+**Stuck items:** items in `processing` status after a reload mid-flush are reset to `pending` by `resetProcessingItems()` on startup.
+
 ### Read path
 
 ```
-initialLoad()
-    ├── ensureHeader() × 3 sheets
-    ├── flush()
-    └── pull()
-          ├── fetch transactions + accounts + categories in parallel
-          └── upsertMany() each:
-                compare updated_at → keep newer
-                Dexie bulkPut → Zustand set
+App startup
+    ├── loadFromCache()              IndexedDB → Zustand (immediate, no network)
+    │
+    └── initialLoad()  (if spreadsheetId exists and spreadsheet accessible)
+            ├── ensureHeader() × 3 sheets
+            ├── flush()
+            └── pull()
+                  ├── fetch transactions + accounts + categories in parallel
+                  ├── pendingIds = Set of all entityIds still in queue
+                  └── upsertMany(incoming, pendingIds) each:
+                        skip entities whose id is in pendingIds (local wins)
+                        compare updated_at → keep newer
+                        Dexie bulkPut → Zustand set
 ```
 
 ---
@@ -200,11 +209,11 @@ fetchExchangeRates(baseCurrency: string): Promise<Rates>
   → { rates: { EUR: 1, RUB: 95.2, USD: 1.08, ... } }
 ```
 
-- Called once after auth, before `initialLoad`.
-- Result stored in `exchangeRateStore` (in-memory).
-- Also written to `settings!A1` JSON blob as `exchange_rates` key.
-- On fetch failure: read last known rates from `settings!A1`; show `SyncStatusBanner` warning.
-- `convertToBase(amount, currency, rates)` used when writing `amount_base` to a new transaction.
+- Called after `prefs.load()` (so `baseCurrency` is the user's actual setting, not the default).
+- Result stored in `exchangeRateStore`, which is **persisted to `localStorage`** (`money-exchange-rates`). Rates survive page reload and are available offline immediately.
+- Also written to `settings!A1` JSON blob as `exchange_rates` key (for reference / other clients).
+- On fetch failure: rates already in `localStorage` from the previous session are used silently — no banner unless rates have never been fetched.
+- `convertToBase(amount, currency, baseCurrency, rates)` used when writing `amount_base` to a new transaction.
 
 ---
 
