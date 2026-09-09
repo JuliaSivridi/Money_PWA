@@ -53,6 +53,7 @@ export function AccountModal({ open, editing, onClose }: Props) {
       await updateAccount(editing.id, {
         name: values.name, currency: values.currency, type: values.type,
         color: values.color, archived: values.archived,
+        balance: parseFloat(values.opening_balance) || 0,
       })
     } else {
       await addAccount({
@@ -123,12 +124,10 @@ export function AccountModal({ open, editing, onClose }: Props) {
             )} />
           </div>
 
-          {!editing && (
-            <div>
-              <Label>Opening balance</Label>
-              <input {...register('opening_balance')} type="number" step="0.01" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="0.00" />
-            </div>
-          )}
+          <div>
+            <Label>{editing ? 'Current balance' : 'Opening balance'}</Label>
+            <input {...register('opening_balance')} type="number" step="0.01" className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" placeholder="0.00" />
+          </div>
 
           {editing && (
             <div className="flex items-center gap-2">
