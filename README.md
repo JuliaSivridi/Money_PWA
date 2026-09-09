@@ -103,7 +103,7 @@ npm run build  # production build → dist/
 
 ## Data Model
 
-All data lives in the user's **db_money** Google Spreadsheet, found or created automatically on first login. Each entity type has its own sheet tab.
+All data lives in the user's **db_money** Google Spreadsheet, created or picked by the user on first run (`drive.file` scope — no silent Drive search). Creating a new file seeds it with sample data; each entity type has its own sheet tab.
 
 ### Transactions
 
