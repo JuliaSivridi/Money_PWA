@@ -111,19 +111,20 @@ All data lives in the user's **db_money** Google Spreadsheet, created or picked 
 |-----|-------|-------------|
 | A | id | UUID (`txn_…`) |
 | B | date | ISO 8601 date (`YYYY-MM-DD`) |
-| C | type | `expense` / `income` / `transfer` / `debt_lent` / `debt_borrowed` |
-| D | amount | Amount in transaction currency |
-| E | currency | ISO 4217 code (`EUR`, `USD`, `RUB`, …) |
-| F | amount_base | Amount converted to base currency at time of entry |
-| G | account_id | Source account id |
-| H | category_id | Category id (empty for transfers/debts) |
-| I | to_account_id | Destination account id (transfers only) |
-| J | to_amount | Amount received in destination currency (transfers only) |
-| K | to_currency | Destination currency (transfers only) |
-| L | debt_ref_id | Id of the original debt transaction (repayment link) |
-| M | comment | Free-text note |
-| N | created_at | ISO 8601 timestamp |
-| O | updated_at | ISO 8601 timestamp (used for last-write-wins sync) |
+| C | time | `HH:MM`, defaults to `00:00` |
+| D | type | `expense` / `income` / `transfer` / `debt_lent` / `debt_borrowed` |
+| E | amount | Amount in transaction currency |
+| F | currency | ISO 4217 code (`EUR`, `USD`, `RUB`, …) |
+| G | amount_base | Amount converted to base currency at time of entry |
+| H | account_id | Source account id |
+| I | category_ids | Comma-separated category ids (up to 2; first is primary) |
+| J | to_account_id | Destination account id (transfers only) |
+| K | to_amount | Amount received in destination currency (transfers only) |
+| L | to_currency | Destination currency (transfers only) |
+| M | debt_ref_id | Id of the original debt transaction (repayment link) |
+| N | comment | Free-text note |
+| O | created_at | ISO 8601 timestamp |
+| P | updated_at | ISO 8601 timestamp (used for last-write-wins sync) |
 
 ### Accounts
 
@@ -138,6 +139,7 @@ All data lives in the user's **db_money** Google Spreadsheet, created or picked 
 | G | sort_order | Integer for manual ordering |
 | H | created_at | ISO 8601 timestamp |
 | I | updated_at | ISO 8601 timestamp |
+| J | color | Hex color (`#rrggbb`) |
 
 ### Categories
 
@@ -148,9 +150,9 @@ All data lives in the user's **db_money** Google Spreadsheet, created or picked 
 | C | icon | Lucide icon name |
 | D | color | Hex color (`#rrggbb`) |
 | E | is_expense | `TRUE` / `FALSE` |
-| F | is_income | `TRUE` / `FALSE` |
-| G | expense_limit | Monthly limit (0 = none) |
-| H | income_limit | Monthly limit (0 = none) |
+| F | expense_limit | Monthly spending limit (0 = none) |
+| G | is_income | `TRUE` / `FALSE` |
+| H | income_limit | Monthly income target (0 = none) |
 | I | sort_order | Integer for manual ordering |
 | J | created_at | ISO 8601 timestamp |
 | K | updated_at | ISO 8601 timestamp |
